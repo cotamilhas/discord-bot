@@ -54,7 +54,7 @@ Contributions are welcome! Feel free to fork this repository, create a new branc
 The image used in this project is sourced from [Pexels made by Adam Krypel]([URL](https://www.pexels.com/photo/stars-in-the-sky-at-night-7649132/)).  
 All rights belong to the original creator.
 
-If you have any concerns about this image being used, please contact me at [hamilheiro@gmail.com].
+If you have any concerns about this image being used, please contact me at hamilheiro@gmail.com.
 
 ## License
 
