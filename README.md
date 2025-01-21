@@ -49,6 +49,13 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 
 Contributions are welcome! Feel free to fork this repository, create a new branch, and submit a pull request.
 
+## Credits
+
+The image used in this project is sourced from [Pexels made by Adam Krypel]([URL](https://www.pexels.com/photo/stars-in-the-sky-at-night-7649132/)).  
+All rights belong to the original creator.
+
+If you have any concerns about this image being used, please contact me at [hamilheiro@gmail.com].
+
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
