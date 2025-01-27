@@ -5,11 +5,11 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 
 ## Features
 
-- **Custom Commands**: Define and use custom commands to tailor the bot to your server's needs.
+- [x] **Custom Commands**: Define and use custom commands to tailor the bot to your server's needs.
 - [x] **Moderation Tools**: Manage your server effectively with moderation features.
 - [ ] **Leveling System**: Allow users to gain experience and level up as they send messages.
-- [ ] **Logging System**: Track important server events with a comprehensive logging system.
-- [ ] **Fun Interactions**: Provide entertainment for server members with interactive commands.
+- [X] **Logging System**: Track important server events with a comprehensive logging system.
+- [X] **Fun Interactions**: Provide entertainment for server members with interactive commands.
 
 
 ## Requirements
