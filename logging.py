@@ -63,8 +63,16 @@ class ServerLogs(commands.Cog):
             if channel_id:
                 channel = self.bot.get_channel(channel_id)
                 if channel:
-                    embed = discord.Embed(title="Voice State Updated", color=EMBED_COLOR, timestamp=datetime.utcnow())
+                    if before.channel is None:
+                        title = "Joined Voice Channel"
+                    elif after.channel is None:
+                        title = "Left Voice Channel"
+                    else:
+                        title = "Switched Voice Channels"
+                    
+                    embed = discord.Embed(title=title, color=EMBED_COLOR, timestamp=datetime.utcnow())
                     embed.add_field(name="Member", value=member.mention, inline=False)
+                    
                     if before.channel is None:
                         embed.add_field(name="Action", value="Joined voice channel", inline=False)
                         embed.add_field(name="Channel", value=after.channel.mention, inline=False)
@@ -75,6 +83,7 @@ class ServerLogs(commands.Cog):
                         embed.add_field(name="Action", value="Switched voice channels", inline=False)
                         embed.add_field(name="Before", value=before.channel.mention, inline=False)
                         embed.add_field(name="After", value=after.channel.mention, inline=False)
+                    
                     embed.set_thumbnail(url=member.avatar.url)
                     embed.set_footer(text="Updated at", icon_url=self.bot.user.avatar.url)
                     await channel.send(embed=embed)
