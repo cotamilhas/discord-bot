@@ -15,10 +15,14 @@ class Fun(commands.Cog):
         result = random.randint(1, 6)
         imagePath = f"stuff/dice/{result}.png"
 
+        if not os.path.exists(imagePath):
+            await interaction.response.send_message("Error: Dice image not found.", ephemeral=True)
+            return
+
         embed = discord.Embed(
-            title="🎲 Dice Roll",
+            title="Dice Roll",
             description=f"You rolled a **{result}**!",
-            color=EMBED_COLOR()
+            color=EMBED_COLOR
         )
 
         with open(imagePath, 'rb') as imageFile:
