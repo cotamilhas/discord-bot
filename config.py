@@ -6,7 +6,7 @@ from discord.ext import commands
 TOKEN = ""  # Change this to your bot token
 
 # Command prefix
-COMMAND_PREFIX = "?"  # Change this to your desired command prefix
+COMMAND_PREFIX = "?"  # Change this to your desired command prefix but since is using slash commands is kinda unnecessary
 
 # Font settings
 FONT_PATH = os.path.join(os.path.dirname(__file__), "stuff", "arial.ttf")  # Change this to the path of your font file

@@ -6,7 +6,6 @@ import requests
 from colorama import Fore, Style
 from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 
-
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -26,16 +25,16 @@ class Events(commands.Cog):
         presenceArray = {
             0: ("Playing", lambda: discord.Game(name=GAME_NAME_PRESENCE)),
             1: ("Streaming", lambda: discord.Streaming(
-            name=STREAM_NAME_PRESENCE,
-            url=STREAM_URL_PRESENCE
+                name=STREAM_NAME_PRESENCE,
+                url=STREAM_URL_PRESENCE
             )),
             2: ("Listening", lambda: discord.Activity(
-            type=discord.ActivityType.listening,
-            name=SONG_NAME_PRESENCE
+                type=discord.ActivityType.listening,
+                name=SONG_NAME_PRESENCE
             )),
             3: ("Watching", lambda: discord.Activity(
-            type=discord.ActivityType.watching,
-            name=MOVIE_NAME_PRESENCE
+                type=discord.ActivityType.watching,
+                name=MOVIE_NAME_PRESENCE
             )),
             4: ("Only Online", lambda: None)
         }
@@ -48,6 +47,9 @@ class Events(commands.Cog):
             print(f"\nBot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Style.RESET_ALL}: {Fore.CYAN}{description}{Style.RESET_ALL}\n")
         else:
             print(f"\n{Fore.RED}Invalid BOT_PRESENCE value: {BOT_PRESENCE}{Style.RESET_ALL}")
+
+        await self.bot.tree.sync()
+        print(f"{Fore.GREEN}Slash commands synchronized successfully!{Style.RESET_ALL}")
 
     async def createImage(self, member, text):
         avatarUrl = str(member.avatar.url)

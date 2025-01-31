@@ -1,14 +1,13 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import os
 import asyncio
-from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR
+from config import TOKEN, EMBED_COLOR
 from datetime import datetime, timezone
 
 intents = discord.Intents.all()
-bot = commands.Bot(command_prefix=COMMAND_PREFIX,
-                   intents=intents, help_command=None)
-
+bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 async def loadCogs():
     for filename in os.listdir('./cogs'):
@@ -20,50 +19,52 @@ async def loadCogs():
             except Exception as e:
                 print(f"Error loading {extension}: {e}")
 
-
-@bot.command(help="Display the help menu.")
-async def help(ctx, args=None):
-    embed = discord.Embed(title=f"{bot.user.name}'s Help!", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
+@bot.tree.command(name="help", description="Displays the help menu.")
+@app_commands.describe(command="The command you want to get help with.")
+async def help(interaction: discord.Interaction, command: str = None):
+    embed = discord.Embed(
+        title=f"Help for {bot.user.name}!",
+        color=EMBED_COLOR,
+        timestamp=datetime.now(timezone.utc)
+    )
     commandCategories = {}
 
-    for command in bot.commands:
-        category = command.cog_name or "Uncategorized"
-        if category not in commandCategories:
-            commandCategories[category] = []
-        commandCategories[category].append(command)
+    for cog_name, cog in bot.cogs.items():
+        commands = cog.get_app_commands()
+        if commands:
+            commandCategories[cog_name] = commands
 
-    if not args:
+    if not command:
         for category, commands in commandCategories.items():
             embed.add_field(
-                name=f"{category} Commands",
-                value="\n".join([f"{i+1}. `{cmd.name}` - {cmd.help or 'No description provided.'}" for i, cmd in enumerate(commands)]),
+                name=f"{category}",
+                value="\n".join([f"`/{cmd.name}` - {cmd.description}" for cmd in commands]),
                 inline=False
             )
         embed.add_field(
             name="Details",
-            value=f"Type `{COMMAND_PREFIX}help <command>` for more details about each command.",
+            value=f"Type `/help <command>` for more details about a specific command.",
             inline=False
         )
-
-    elif args in [cmd.name for cmd in bot.commands]:
-        command = bot.get_command(args)
-        embed.add_field(
-            name=f"Command: {args}",
-            value=f"**Description**: {command.help or 'No description provided.'}\n\n**Usage**: `{COMMAND_PREFIX}{args} <arguments>`",
-            inline=False
-        )
-
     else:
-        embed.add_field(
-            name="Command not found",
-            value="Sorry, I couldn't find that command. Please check the command name and try again.",
-            inline=False
-        )
+        cmd = bot.tree.get_command(command)
+        if cmd:
+            embed.add_field(
+                name=f"Command: /{cmd.name}",
+                value=f"**Description**: {cmd.description}\n\n**Usage**: `/{cmd.name}`",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Command not found",
+                value="Sorry, I couldn't find that command. Check the name and try again.",
+                inline=False
+            )
 
-    embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.avatar.url)
+    embed.set_footer(text=f"Requested by {interaction.user.name}", icon_url=interaction.user.avatar.url)
     embed.set_thumbnail(url=bot.user.avatar.url)
 
-    await ctx.send(embed=embed)
+    await interaction.response.send_message(embed=embed)
 
 if __name__ == "__main__":
     async def main():
