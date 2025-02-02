@@ -6,6 +6,7 @@ import requests
 from colorama import Fore, Style
 from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 
+
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -117,6 +118,7 @@ class Events(commands.Cog):
         text = f'{member.display_name} left the server!'
         file = await self.createImage(member, text)
         await channel.send(file=file)
+
 
 async def setup(bot):
     await bot.add_cog(Events(bot))

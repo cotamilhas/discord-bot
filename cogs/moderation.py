@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from colorama import Fore, Style
 
+
 class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -30,6 +31,17 @@ class Moderation(commands.Cog):
         else:
             await interaction.response.send_message(f"{member.mention} was kicked.")
             print(Fore.YELLOW + f"{interaction.user} kicked {member}." + Style.RESET_ALL)
+
+    @ban.error
+    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to ban members.", ephemeral=True)  
+
+    @kick.error
+    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to kick members.", ephemeral=True)
+          
 
 async def setup(bot):
     await bot.add_cog(Moderation(bot))

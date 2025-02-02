@@ -5,6 +5,7 @@ from io import BytesIO
 from PIL import Image
 from config import EMBED_COLOR
 
+
 class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -81,6 +82,7 @@ class Commands(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed)
+
 
 async def setup(bot):
     await bot.add_cog(Commands(bot))

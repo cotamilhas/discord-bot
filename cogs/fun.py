@@ -5,6 +5,7 @@ import random
 import os
 from config import TAILS_IMAGE, HEADS_IMAGE, EMBED_COLOR
 
+
 class Fun(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -14,10 +15,14 @@ class Fun(commands.Cog):
         result = random.randint(1, 6)
         imagePath = f"stuff/dice/{result}.png"
 
+        if not os.path.exists(imagePath):
+            await interaction.response.send_message("Error: Dice image not found.", ephemeral=True)
+            return
+
         embed = discord.Embed(
-            title="🎲 Dice Roll",
+            title="Dice Roll",
             description=f"You rolled a **{result}**!",
-            color=EMBED_COLOR()
+            color=EMBED_COLOR
         )
 
         with open(imagePath, 'rb') as imageFile:
@@ -31,7 +36,7 @@ class Fun(commands.Cog):
         imagePath = TAILS_IMAGE if outcome == 'Tails' else HEADS_IMAGE
 
         embed = discord.Embed(
-            title="🪙 Coin Flip",
+            title="Coin Flip",
             description=f"The coin landed on **{outcome}**!",
             color=discord.Color.yellow()
         )
@@ -40,6 +45,7 @@ class Fun(commands.Cog):
             file = discord.File(imageFile, filename=os.path.basename(imagePath))
             embed.set_image(url=f"attachment://{file.filename}")
             await interaction.response.send_message(embed=embed, file=file)
+
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))

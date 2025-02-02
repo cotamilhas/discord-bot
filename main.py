@@ -65,6 +65,7 @@ async def help(interaction: discord.Interaction, command: str = None):
     embed.set_thumbnail(url=bot.user.avatar.url)
 
     await interaction.response.send_message(embed=embed)
+    
 
 if __name__ == "__main__":
     async def main():

@@ -36,7 +36,7 @@ class AutoRole(commands.Cog):
     @app_commands.command(name="setautorole", description="Set the automatic role for new members.")
     @app_commands.describe(role="The role to be automatically assigned.")
     @app_commands.checks.has_permissions(administrator=True)
-    async def setAutoRole(self, interaction: discord.Interaction, role: discord.Role):
+    async def setautorole(self, interaction: discord.Interaction, role: discord.Role):
         guildId = str(interaction.guild.id)
         
         if role.name == "@everyone":
@@ -51,7 +51,7 @@ class AutoRole(commands.Cog):
 
     @app_commands.command(name="clearautorole", description="Remove the automatic role from the server.")
     @app_commands.checks.has_permissions(administrator=True)
-    async def clearAutoRole(self, interaction: discord.Interaction):
+    async def clearautorole(self, interaction: discord.Interaction):
         guildId = str(interaction.guild.id)
         
         data = self.loadConfig()
@@ -63,6 +63,16 @@ class AutoRole(commands.Cog):
         else:
             await interaction.response.send_message("No automatic role has been configured for this server.", ephemeral=True)
             print(f"No auto role configured for server {Fore.CYAN}{interaction.guild.name}{Style.RESET_ALL}.")
+
+    @setautorole.error
+    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to set the automatic role.", ephemeral=True)        
+
+    @clearautorole.error
+    async def clearlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to clear the automatic role.", ephemeral=True)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

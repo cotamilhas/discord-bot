@@ -25,6 +25,7 @@ MOVIE_NAME_PRESENCE = "Movie"  # Change this to the movie you want to show in th
 
 # Server options
 SERVER_OPTIONS = os.path.join(os.path.dirname(__file__), "stuff", "serveroptions.json")  # Change this to the path of your server options file
+LEVELS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "levels.json")  # Change this to the path of your levels file
 
 # Embed color
 EMBED_COLOR = discord.Color.blue()  # Change this to the color you want for your embeds
