@@ -33,12 +33,12 @@ class Moderation(commands.Cog):
             print(Fore.YELLOW + f"{interaction.user} kicked {member}." + Style.RESET_ALL)
 
     @ban.error
-    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to ban members.", ephemeral=True)  
 
     @kick.error
-    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to kick members.", ephemeral=True)
           

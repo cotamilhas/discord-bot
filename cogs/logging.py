@@ -98,7 +98,7 @@ class ServerLogs(commands.Cog):
         await interaction.response.send_message(f"Log channel set to {channel.mention}.", ephemeral=True)
 
     @setlogchannel.error
-    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
     
@@ -116,7 +116,7 @@ class ServerLogs(commands.Cog):
             await interaction.response.send_message("No log channel has been configured for this server.", ephemeral=True)
 
     @clearlogchannel.error
-    async def clearlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
 

@@ -65,12 +65,12 @@ class AutoRole(commands.Cog):
             print(f"No auto role configured for server {Fore.CYAN}{interaction.guild.name}{Style.RESET_ALL}.")
 
     @setautorole.error
-    async def setlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to set the automatic role.", ephemeral=True)        
 
     @clearautorole.error
-    async def clearlogchannelError(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message("You do not have permission to clear the automatic role.", ephemeral=True)
 

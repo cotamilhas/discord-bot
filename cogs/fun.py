@@ -46,6 +46,11 @@ class Fun(commands.Cog):
             embed.set_image(url=f"attachment://{file.filename}")
             await interaction.response.send_message(embed=embed, file=file)
 
+    @flipcoin.error
+    @roll.error
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        await interaction.response.send_message("An error occurred.", ephemeral=True)        
+
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))

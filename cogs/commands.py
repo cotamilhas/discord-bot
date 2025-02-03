@@ -36,6 +36,7 @@ class Commands(commands.Cog):
     @app_commands.describe(member="The member whose banner you want to see.")
     async def banner(self, interaction: discord.Interaction, member: discord.Member = None):
         member = member or interaction.user
+
         embed = discord.Embed(
             title=f"{member.display_name}'s Banner",
             color=EMBED_COLOR
@@ -47,23 +48,23 @@ class Commands(commands.Cog):
             embed.set_image(url=user.banner.url)
             await interaction.response.send_message(embed=embed)
         else:
-            color = user.accent_color or (
-                member.color if member.color.value != 0 else discord.Color.default()
-            )
+            userColor = user.accent_color
 
-            buffer = BytesIO()
-            Image.new("RGB", (600, 200), color.to_rgb()).save(buffer, format="PNG")
-            buffer.seek(0)
+            bannerImage = Image.new("RGB", (600, 200), userColor.to_rgb())
+            imageBuffer = BytesIO()
+            bannerImage.save(imageBuffer, format="PNG")
+            imageBuffer.seek(0)
 
-            file = discord.File(fp=buffer, filename="banner.png")
+            bannerFile = discord.File(fp=imageBuffer, filename="banner.png")
             embed.description = "This user has a color as their banner."
             embed.set_image(url="attachment://banner.png")
 
             embed.set_footer(
-                text=f"Requested by {interaction.user.display_name}", 
+                text=f"Requested by {interaction.user.display_name}",
                 icon_url=interaction.user.avatar.url
             )
-            await interaction.response.send_message(embed=embed, file=file)
+
+            await interaction.response.send_message(embed=embed, file=bannerFile)
 
     @app_commands.command(name="servericon", description="Displays the server icon, if available.")
     async def servericon(self, interaction: discord.Interaction):
@@ -82,6 +83,13 @@ class Commands(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed)
+
+    @banner.error
+    @avatar.error
+    @servericon.error
+    @ping.error
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        await interaction.response.send_message("An error occurred.", ephemeral=True)
 
 
 async def setup(bot):

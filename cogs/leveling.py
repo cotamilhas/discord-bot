@@ -124,6 +124,13 @@ class Leveling(commands.Cog):
         else:
             await interaction.response.send_message("No one is on the leaderboard yet.")
 
+    @level.error
+    @leaderboard.error
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.CommandError):
+            await interaction.response.send_message("An error occurred.", ephemeral=True)
+
+
 
 async def setup(bot):
     await bot.add_cog(Leveling(bot))
