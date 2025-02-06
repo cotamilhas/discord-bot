@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from io import BytesIO
 from PIL import Image
+from colorama import Fore, Style
 from config import EMBED_COLOR
 
 
@@ -50,6 +51,10 @@ class Commands(commands.Cog):
         else:
             userColor = user.accent_color
 
+            if userColor is None:
+                await interaction.response.send_message("This user does not have a banner or an accent color set.", ephemeral=True)
+                return
+
             bannerImage = Image.new("RGB", (600, 200), userColor.to_rgb())
             imageBuffer = BytesIO()
             bannerImage.save(imageBuffer, format="PNG")
@@ -89,7 +94,17 @@ class Commands(commands.Cog):
     @servericon.error
     @ping.error
     async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        await interaction.response.send_message("An error occurred.", ephemeral=True)
+        errorMessage = f"An error occurred: {error}"
+
+        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(errorMessage, ephemeral=True)
+            else:
+                await interaction.followup.send_message(errorMessage, ephemeral=True)
+        except Exception as e:
+            print(f"[ERROR] Failed to send error message: {e}")
 
 
 async def setup(bot):

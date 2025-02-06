@@ -3,8 +3,10 @@ from discord.ext import commands
 from discord import app_commands
 import os
 import asyncio
-from config import TOKEN, EMBED_COLOR
 from datetime import datetime, timezone
+from colorama import Fore, Style
+from config import TOKEN, EMBED_COLOR
+
 
 intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
@@ -67,11 +69,18 @@ async def help(interaction: discord.Interaction, command: str = None):
     await interaction.response.send_message(embed=embed)
     
     @help.error
-    async def error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.CommandNotFound):
-            await interaction.response.send_message("Sorry, I couldn't find that command. Check the name and try again.", ephemeral=True)
-        else:
-            await interaction.response.send_message("An error occurred while processing the command.", ephemeral=True)
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        errorMessage = f"An error occurred: {error}"
+
+        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(errorMessage, ephemeral=True)
+            else:
+                await interaction.followup.send_message(errorMessage, ephemeral=True)
+        except Exception as e:
+            print(f"[ERROR] Failed to send error message: {e}")
 
 if __name__ == "__main__":
     async def main():

@@ -5,6 +5,7 @@ import json
 import os
 import random
 import asyncio
+from colorama import Fore, Style
 from config import EMBED_COLOR, LEVELS_FILE
 
 class Leveling(commands.Cog):
@@ -127,8 +128,17 @@ class Leveling(commands.Cog):
     @level.error
     @leaderboard.error
     async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.CommandError):
-            await interaction.response.send_message("An error occurred.", ephemeral=True)
+        errorMessage = f"An error occurred: {error}"
+
+        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(errorMessage, ephemeral=True)
+            else:
+                await interaction.followup.send_message(errorMessage, ephemeral=True)
+        except Exception as e:
+            print(f"[ERROR] Failed to send error message: {e}")
 
 
 

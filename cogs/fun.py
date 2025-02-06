@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 import random
 import os
+from colorama import Fore, Style
 from config import TAILS_IMAGE, HEADS_IMAGE, EMBED_COLOR
 
 
@@ -49,7 +50,17 @@ class Fun(commands.Cog):
     @flipcoin.error
     @roll.error
     async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        await interaction.response.send_message("An error occurred.", ephemeral=True)        
+        errorMessage = f"An error occurred: {error}"
+
+        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
+
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(errorMessage, ephemeral=True)
+            else:
+                await interaction.followup.send_message(errorMessage, ephemeral=True)
+        except Exception as e:
+            print(f"[ERROR] Failed to send error message: {e}")     
 
 
 async def setup(bot):
