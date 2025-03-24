@@ -4,7 +4,7 @@ from discord import app_commands
 import json
 from colorama import Fore, Style
 from config import SERVER_OPTIONS, EMBED_COLOR
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class ServerLogs(commands.Cog):
@@ -45,7 +45,7 @@ class ServerLogs(commands.Cog):
         if channel_id:
             channel = self.bot.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=datetime.utcnow())
+                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
                 embed.add_field(name="Channel", value=before.channel.mention, inline=False)
                 embed.add_field(name="Author", value=before.author.mention, inline=False)
                 embed.add_field(name="Before", value=before.content or "No content", inline=False)
@@ -70,7 +70,7 @@ class ServerLogs(commands.Cog):
                     else:
                         title = "Switched Voice Channels"
                     
-                    embed = discord.Embed(title=title, color=EMBED_COLOR, timestamp=datetime.utcnow())
+                    embed = discord.Embed(title=title, color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
                     embed.add_field(name="Member", value=member.mention, inline=False)
                     
                     if before.channel is None:
