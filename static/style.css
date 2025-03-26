@@ -1,0 +1,74 @@
+body {
+    font-family: "Roboto", sans-serif;
+    background-color: #36393f;
+    color: #dcddde;
+    margin: 0;
+    padding: 0;
+}
+
+h1,
+h2 {
+    color: #ffffff;
+}
+
+h1 {
+    font-size: 24px;
+    padding: 20px;
+    background-color: #2f3136;
+    margin: 0;
+}
+
+.container {
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #2f3136;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #4f545c;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background-color: #5865f2;
+}
+
+.server-list h2,
+.channel-list h2 {
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.server-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.server-button {
+    display: flex;
+    align-items: center;
+}

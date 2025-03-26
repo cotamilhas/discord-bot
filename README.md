@@ -1,6 +1,10 @@
 
 # Discord Bot
 
+**THIS BRANCH IS DEDICATED TO CREATE A WEB DASHBOARD ONLY!**
+ 
+#
+
 This is a Discord bot project developed to interact with Discord servers. The bot includes multiple features to enhance server functionality and user engagement.
 
 ## Features

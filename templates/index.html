@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discord Bot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <h1>Discord Bot</h1>
+
+    <div class="container">
+        <!-- Sidebar for the server list -->
+        <div class="sidebar server-list">
+            <h2>Servers</h2>
+            <div id="servers"></div>
+        </div>
+        
+        <!-- Main area for the channel list -->
+        <div class="content channel-list">
+            <h2>Channels</h2>
+            <div id="channels"></div>
+        </div>
+    </div>
+
+    <script>
+        // Function to fetch the list of servers from the backend
+        async function fetchServers() {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/servers");
+                const servers = await response.json();
+                const serversDiv = document.getElementById("servers");
+                serversDiv.innerHTML = "";
+
+                // Loop through the server list and create buttons for each one
+                servers.forEach(server => {
+                    const btn = document.createElement("button");
+                    btn.className = "server-button";
+                    btn.onclick = () => fetchChannels(server.id);
+
+                    // Server icon
+                    const icon = document.createElement("img");
+                    icon.className = "server-icon";
+                    icon.src = server.icon || "https://via.placeholder.com/32";
+                    icon.alt = server.name;
+
+                    // Server name and member count
+                    const text = document.createTextNode(`${server.name} (${server.member_count} members)`);
+
+                    // Add the icon and name to the button
+                    btn.appendChild(icon);
+                    btn.appendChild(text);
+                    serversDiv.appendChild(btn);
+                });
+            } catch (error) {
+                console.error("Error fetching servers:", error);
+            }
+        }
+
+        // Function to fetch the list of channels for a specific server
+        async function fetchChannels(guildId) {
+            try {
+                const response = await fetch(`http://127.0.0.1:5000/channels/${guildId}`);
+                const channels = await response.json();
+
+                if (channels.error) {
+                    alert(channels.error);
+                    return;
+                }
+
+                const channelsDiv = document.getElementById("channels");
+                channelsDiv.innerHTML = "";
+
+                // Loop through the channel list and create buttons for each one
+                channels.forEach(channel => {
+                    const btn = document.createElement("button");
+                    btn.textContent = `${channel.name} (ID: ${channel.id})`;
+                    btn.onclick = () => sendMessage(channel.id);
+                    channelsDiv.appendChild(btn);
+                });
+            } catch (error) {
+                console.error("Error fetching channels:", error);
+            }
+        }
+
+        // Function to send a message to a specific channel
+        function sendMessage(channelId) {
+            const message = prompt("Write a message for the channel:");
+            if (message) {
+                fetch(`http://127.0.0.1:5000/send/${channelId}`, {
+                    method: "POST",
+                    body: JSON.stringify({ message: message }),
+                    headers: {
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Message sent successfully!");
+                    } else {
+                        alert("Error sending message: " + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error sending message:", error);
+                });
+            }
+        }
+
+        // Call the function to fetch servers as soon as the page loads
+        fetchServers(); 
+    </script>
+</body>
+</html>
