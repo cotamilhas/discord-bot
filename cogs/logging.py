@@ -4,7 +4,7 @@ from discord import app_commands
 import json
 from colorama import Fore, Style
 from config import SERVER_OPTIONS, EMBED_COLOR
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 class ServerLogs(commands.Cog):
@@ -45,7 +45,7 @@ class ServerLogs(commands.Cog):
         if channel_id:
             channel = self.bot.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
+                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=timezone.utc)
                 embed.add_field(name="Channel", value=before.channel.mention, inline=False)
                 embed.add_field(name="Author", value=before.author.mention, inline=False)
                 embed.add_field(name="Before", value=before.content or "No content", inline=False)
@@ -53,6 +53,25 @@ class ServerLogs(commands.Cog):
                 embed.set_thumbnail(url=before.author.avatar.url)
                 embed.set_footer(text="Edited at", icon_url=self.bot.user.avatar.url)
                 await channel.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.author.bot:
+            return
+
+        print(f"Message by {Fore.YELLOW}{message.author}{Style.RESET_ALL} was deleted in {Fore.YELLOW}{message.channel}{Style.RESET_ALL}")
+        guild_config = self.getGuildConfig(message.guild.id)
+        channel_id = guild_config.get("log_channel")
+        if channel_id:
+            channel = self.bot.get_channel(channel_id)
+            if channel:
+                embed = discord.Embed(title="Message Deleted", color=EMBED_COLOR, timestamp=timezone.utc)
+                embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+                embed.add_field(name="Author", value=message.author.mention, inline=False)
+                embed.add_field(name="Content", value=message.content or "No content", inline=False)
+                embed.set_thumbnail(url=message.author.avatar.url)
+                embed.set_footer(text="Deleted at", icon_url=self.bot.user.avatar.url)
+                await channel.send(embed=embed)        
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
