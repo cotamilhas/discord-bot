@@ -4,7 +4,7 @@ from discord import app_commands
 import json
 from colorama import Fore, Style
 from config import SERVER_OPTIONS, EMBED_COLOR
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 
 class ServerLogs(commands.Cog):
@@ -34,24 +34,18 @@ class ServerLogs(commands.Cog):
         data[guild_id][key] = value
         self.saveConfig(data)
 
-    def add_log(self, message):
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        self.log_messages.append(f"[{timestamp}] {message}")
-        if len(self.log_messages) > 100:  # Limita o número de logs para não crescer indefinidamente
-            self.log_messages.pop(0)
-
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
-
-        print(f"Message edited by {before.author} in {before.channel}")
+        
+        print(f"Message edited by {Fore.YELLOW}{before.author}{Style.RESET_ALL} in {Fore.YELLOW}{before.channel}{Style.RESET_ALL}")
         guild_config = self.getGuildConfig(before.guild.id)
         channel_id = guild_config.get("log_channel")
         if channel_id:
             channel = self.bot.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
+                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=timezone.utc)
                 embed.add_field(name="Channel", value=before.channel.mention, inline=False)
                 embed.add_field(name="Author", value=before.author.mention, inline=False)
                 embed.add_field(name="Before", value=before.content or "No content", inline=False)
@@ -59,12 +53,30 @@ class ServerLogs(commands.Cog):
                 embed.set_thumbnail(url=before.author.avatar.url)
                 embed.set_footer(text="Edited at", icon_url=self.bot.user.avatar.url)
                 await channel.send(embed=embed)
-                self.add_log(f"Message edited in {before.channel.name} by {before.author.name}")
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.author.bot:
+            return
+
+        print(f"Message by {Fore.YELLOW}{message.author}{Style.RESET_ALL} was deleted in {Fore.YELLOW}{message.channel}{Style.RESET_ALL}")
+        guild_config = self.getGuildConfig(message.guild.id)
+        channel_id = guild_config.get("log_channel")
+        if channel_id:
+            channel = self.bot.get_channel(channel_id)
+            if channel:
+                embed = discord.Embed(title="Message Deleted", color=EMBED_COLOR, timestamp=timezone.utc)
+                embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+                embed.add_field(name="Author", value=message.author.mention, inline=False)
+                embed.add_field(name="Content", value=message.content or "No content", inline=False)
+                embed.set_thumbnail(url=message.author.avatar.url)
+                embed.set_footer(text="Deleted at", icon_url=self.bot.user.avatar.url)
+                await channel.send(embed=embed)        
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
-            print(f"Voice state updated for {member}")
+            print(f"Voice state updated for {Fore.YELLOW}{member}{Style.RESET_ALL}")
             guild_config = self.getGuildConfig(member.guild.id)
             channel_id = guild_config.get("log_channel")
             if channel_id:
@@ -79,6 +91,7 @@ class ServerLogs(commands.Cog):
                     
                     embed = discord.Embed(title=title, color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
                     embed.add_field(name="Member", value=member.mention, inline=False)
+                    
                     if before.channel is None:
                         embed.add_field(name="Action", value="Joined voice channel", inline=False)
                         embed.add_field(name="Channel", value=after.channel.mention, inline=False)
@@ -89,26 +102,43 @@ class ServerLogs(commands.Cog):
                         embed.add_field(name="Action", value="Switched voice channels", inline=False)
                         embed.add_field(name="Before", value=before.channel.mention, inline=False)
                         embed.add_field(name="After", value=after.channel.mention, inline=False)
+                    
                     embed.set_thumbnail(url=member.avatar.url)
                     embed.set_footer(text="Updated at", icon_url=self.bot.user.avatar.url)
                     await channel.send(embed=embed)
-                    self.add_log(f"Voice state updated for {member.name}")
 
-    # Comando para pegar os logs do servidor
-    @app_commands.command(name="getlogs", description="Get recent logs.")
-    async def getlogs(self, interaction: discord.Interaction):
-        if self.log_messages:
-            logs = "\n".join(self.log_messages[-10:])  # Retorna os 10 logs mais recentes
-            await interaction.response.send_message(f"Recent logs:\n{logs}")
-        else:
-            await interaction.response.send_message("No logs available.")
-
-# Comando para limpar logs
-    @app_commands.command(name="clearlogs", description="Clear the logs.")
+    @app_commands.command(name="setlogchannel", description="Set the log channel for this server.")
+    @app_commands.describe(channel="The channel where logs will be sent.")
     @app_commands.checks.has_permissions(administrator=True)
-    async def clearlogs(self, interaction: discord.Interaction):
-        self.log_messages.clear()  # Limpa a lista de logs
-        await interaction.response.send_message("Logs cleared.", ephemeral=True)
+    async def setlogchannel(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        self.updateGuildConfig(interaction.guild.id, "log_channel", channel.id)
+        self.updateGuildConfig(interaction.guild.id, "server_name", interaction.guild.name)
+        print(f"Log channel set to {Fore.BLUE}{channel.mention}{Style.RESET_ALL} for guild {Fore.BLUE}{interaction.guild.name}{Style.RESET_ALL}")
+        await interaction.response.send_message(f"Log channel set to {channel.mention}.", ephemeral=True)
+
+    @setlogchannel.error
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+    
+    @app_commands.command(name="clearlogchannel", description="Remove the log channel from this server.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def clearlogchannel(self, interaction: discord.Interaction):
+        guild_id = str(interaction.guild.id)
+        data = self.loadConfig()
+        if guild_id in data and "log_channel" in data[guild_id]:
+            del data[guild_id]["log_channel"]
+            self.saveConfig(data)
+            print(f"Log channel removed for guild {Fore.BLUE}{interaction.guild.name}{Style.RESET_ALL}")
+            await interaction.response.send_message("Log channel removed.", ephemeral=True)
+        else:
+            await interaction.response.send_message("No log channel has been configured for this server.", ephemeral=True)
+
+    @clearlogchannel.error
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        if isinstance(error, app_commands.MissingPermissions):
+            await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+
 
 async def setup(bot):
     await bot.add_cog(ServerLogs(bot))
