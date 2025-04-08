@@ -28,11 +28,13 @@ class ServerLogs(commands.Cog):
 
     def updateGuildConfig(self, guild_id, key, value):
         data = self.loadConfig()
+        print(f"Updating config for guild {guild_id} with key {key} and value {value}")
         guild_id = str(guild_id)
         if guild_id not in data:
             data[guild_id] = {"server_name": "Unknown"}
         data[guild_id][key] = value
         self.saveConfig(data)
+
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -45,14 +47,23 @@ class ServerLogs(commands.Cog):
         if channel_id:
             channel = self.bot.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=timezone.utc)
-                embed.add_field(name="Channel", value=before.channel.mention, inline=False)
-                embed.add_field(name="Author", value=before.author.mention, inline=False)
-                embed.add_field(name="Before", value=before.content or "No content", inline=False)
-                embed.add_field(name="After", value=after.content or "No content", inline=False)
-                embed.set_thumbnail(url=before.author.avatar.url)
-                embed.set_footer(text="Edited at", icon_url=self.bot.user.avatar.url)
-                await channel.send(embed=embed)
+                try:
+                    print(f"Sending log to {Fore.YELLOW}{channel}{Style.RESET_ALL}")
+                    embed = discord.Embed(title="Message Edited", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
+                    embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+                    embed.add_field(name="Author", value=before.author.mention, inline=False)
+                    embed.add_field(name="Before", value=before.content or "No content", inline=False)
+                    embed.add_field(name="After", value=after.content or "No content", inline=False)
+                    embed.set_thumbnail(url=before.author.avatar.url)
+                    embed.set_footer(text="Edited at", icon_url=self.bot.user.avatar.url)
+                    await channel.send(embed=embed)
+                except discord.DiscordException as e:
+                    print(f"Failed to send log message: {Fore.RED}{e}{Style.RESET_ALL}")
+                except Exception as e:
+                    print(f"An unexpected error occurred: {Fore.RED}{e}{Style.RESET_ALL}")
+        else:
+            print(f"Log channel not found: {Fore.RED}{channel_id}{Style.RESET_ALL}")
+            return
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -65,14 +76,36 @@ class ServerLogs(commands.Cog):
         if channel_id:
             channel = self.bot.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(title="Message Deleted", color=EMBED_COLOR, timestamp=timezone.utc)
-                embed.add_field(name="Channel", value=message.channel.mention, inline=False)
-                embed.add_field(name="Author", value=message.author.mention, inline=False)
-                embed.add_field(name="Content", value=message.content or "No content", inline=False)
-                embed.set_thumbnail(url=message.author.avatar.url)
-                embed.set_footer(text="Deleted at", icon_url=self.bot.user.avatar.url)
-                await channel.send(embed=embed)        
+                    try:
+                        embed = discord.Embed(title="Message Deleted", color=EMBED_COLOR, timestamp=datetime.now(timezone.utc))
+                        embed.add_field(name="Channel", value=message.channel.mention, inline=False)
+                        embed.add_field(name="Author", value=message.author.mention, inline=False)
+                        embed.add_field(name="Content", value=message.content or "No content", inline=False)
 
+                        if message.attachments:
+                            attachments = "\n".join([f"[{attachment.filename}]({attachment.url})" for attachment in message.attachments])
+                            embed.add_field(name="Attachments", value=attachments, inline=False)
+                        
+                        if message.embeds:
+                            embeds = "\n".join([f"[Embed URL]({embed_data.url})" if embed_data.url else "No embed URL" for embed_data in message.embeds])
+                            embed.add_field(name="Embeds", value=embeds, inline=False)
+                        
+                        if message.stickers:
+                            stickers = "\n".join([f"[Sticker]({sticker.url})" if sticker.url else "No sticker URL" for sticker in message.stickers])
+                            embed.add_field(name="Stickers", value=stickers, inline=False)
+                        
+                        embed.set_thumbnail(url=message.author.avatar.url)
+                        embed.set_footer(text="Deleted at", icon_url=self.bot.user.avatar.url)
+                        
+                        await channel.send(embed=embed)
+
+                    except discord.DiscordException as e:
+                        print(f"Failed to send log message: {Fore.RED}{e}{Style.RESET_ALL}")
+                    except Exception as e:
+                        print(f"An unexpected error occurred: {Fore.RED}{e}{Style.RESET_ALL}")                
+            else:
+                print(f"Log channel not found: {Fore.RED}{channel_id}{Style.RESET_ALL}")
+                
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if before.channel != after.channel:
@@ -111,7 +144,7 @@ class ServerLogs(commands.Cog):
     @app_commands.describe(channel="The channel where logs will be sent.")
     @app_commands.checks.has_permissions(administrator=True)
     async def setlogchannel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        self.updateGuildConfig(interaction.guild.id, "log_channel", channel.id)
+        self.updateGuildConfig(interaction.guild.id, "log_channel", int(channel.id))
         self.updateGuildConfig(interaction.guild.id, "server_name", interaction.guild.name)
         print(f"Log channel set to {Fore.BLUE}{channel.mention}{Style.RESET_ALL} for guild {Fore.BLUE}{interaction.guild.name}{Style.RESET_ALL}")
         await interaction.response.send_message(f"Log channel set to {channel.mention}.", ephemeral=True)
