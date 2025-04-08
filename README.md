@@ -48,6 +48,13 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - Customize commands and features in the bot's source code to meet your specific requirements.
 - Start the bot and invite it to your Discord server.
 
+## WARNING: Handling Large Numbers with Web Hosting Services
+When working with large numbers, such as user IDs or message IDs, there can be issues with precision due to the way JavaScript and certain hosting environments handle large integers. Discord bots, when hosted on web services, might encounter problems with handling these large numbers, leading to incorrect or truncated data.
+
+This problem occurs because many web hosting services and APIs may not properly support large integers, causing them to lose precision when they exceed the safe integer limit in JavaScript (2^53 - 1). This could result in values being displayed incorrectly, such as missing digits or incorrect formatting.
+
+To avoid such issues, it's important to be aware of these limitations and implement proper handling for large numbers in your bot, especially when interacting with Discord's API or other services that require accurate, large numeric values.
+
 ## Contributing
 
 Contributions are welcome! Feel free to fork this repository, create a new branch, and submit a pull request.
