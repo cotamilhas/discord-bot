@@ -5,10 +5,9 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from colorama import Fore, Style
-from config import TOKEN, EMBED_COLOR
+from config import TOKEN, EMBED_COLOR, intents
 
 
-intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 async def loadCogs():
@@ -69,18 +68,25 @@ async def help(interaction: discord.Interaction, command: str = None):
     await interaction.response.send_message(embed=embed)
     
     @help.error
-    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        errorMessage = f"An error occurred: {error}"
+    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError, member: discord.Member = None):
+        member = interaction.user
+        if isinstance(error, app_commands.errors.MissingPermissions):
+            errorMessage = "You do not have the required permissions to use this command."
+        else:
+            errorMessage = f"An error occurred: {error}"
 
-        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
+        print(f"{Fore.RED}[ERROR]{Style.RESET_ALL} {member}: {error}")
 
         try:
             if not interaction.response.is_done():
                 await interaction.response.send_message(errorMessage, ephemeral=True)
             else:
-                await interaction.followup.send_message(errorMessage, ephemeral=True)
+                await interaction.followup.send(errorMessage, ephemeral=True)
+
+        except discord.DiscordException as e:
+            print(f"{Fore.YELLOW}[ERROR - Discord]{Style.RESET_ALL} {member}: {e}.")
         except Exception as e:
-            print(f"[ERROR] Failed to send error message: {e}")
+            print(f"{Fore.RED}[ERROR - General]{Style.RESET_ALL} {member}: {e}.")
 
 if __name__ == "__main__":
     async def main():

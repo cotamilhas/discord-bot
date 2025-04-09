@@ -33,3 +33,6 @@ EMBED_COLOR = discord.Color.blue()  # Change this to the color you want for your
 # Coin Images
 TAILS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "tails.png")  # Change this to the path of your tails image
 HEADS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "heads.png")  # Change this to the path of your heads image
+
+# Bot Intents
+intents = discord.Intents.all()  # Change this to the intents you want to use
