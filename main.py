@@ -5,7 +5,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from colorama import Fore, Style
-from config import TOKEN, EMBED_COLOR
+from config import TOKEN, EMBED_COLOR, intents
 from flask import Flask, jsonify, render_template, request
 from threading import Thread
 import time
@@ -14,7 +14,6 @@ import time
 app = Flask(__name__)
 
 # Discord bot setup
-intents = discord.Intents.all()
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
 
 # Load cogs
