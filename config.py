@@ -35,4 +35,4 @@ TAILS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "tails.png")  # C
 HEADS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "heads.png")  # Change this to the path of your heads image
 
 # Bot Intents
-intents = discord.Intents.all()  # Change this to the intents you want to use
+INTENTS = discord.Intents.all()  # Change this to the intents you want to use

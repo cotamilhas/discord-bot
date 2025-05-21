@@ -5,10 +5,10 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from colorama import Fore, Style
-from config import TOKEN, EMBED_COLOR, intents
+from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR, INTENTS
 
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=INTENTS, help_command=None)
 
 async def loadCogs():
     for filename in os.listdir('./cogs'):
@@ -87,6 +87,7 @@ async def help(interaction: discord.Interaction, command: str = None):
             print(f"{Fore.YELLOW}[ERROR - Discord]{Style.RESET_ALL} {member}: {e}.")
         except Exception as e:
             print(f"{Fore.RED}[ERROR - General]{Style.RESET_ALL} {member}: {e}.")
+            
 
 if __name__ == "__main__":
     async def main():
