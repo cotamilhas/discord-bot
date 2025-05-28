@@ -3,8 +3,9 @@ from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 import io
 import requests
-from colorama import Fore, Style
+from colorama import Fore, init
 from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
+init(autoreset=True)
 
 
 class Events(commands.Cog):
@@ -13,15 +14,15 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(f'\n{Fore.GREEN}Bot is Online!{Style.RESET_ALL}')
-        print(f'Logged in as {Fore.GREEN}{self.bot.user.name}{Style.RESET_ALL} ({Fore.YELLOW}{self.bot.user.id}{Style.RESET_ALL})\n')
+        print(f"\n{Fore.GREEN}Bot is Online!")
+        print(f"Logged in as {Fore.GREEN}{self.bot.user.name} {Fore.YELLOW}({self.bot.user.id})\n")
 
         if self.bot.guilds:
-            print(f"{Fore.CYAN}Guilds connected to:{Style.RESET_ALL}")
+            print(f"{Fore.CYAN}Guilds connected to:")
             for guild in self.bot.guilds:
-                print(f'{Fore.GREEN}{guild.name}{Style.RESET_ALL} ({Fore.YELLOW}{guild.id}{Style.RESET_ALL})')
+                print(f"{Fore.GREEN}{guild.name} {Fore.YELLOW}({guild.id})")
         else:
-            print(f'{Fore.RED}The bot is not connected to any servers.{Style.RESET_ALL}\n')
+            print(f"{Fore.RED}The bot is not connected to any servers.\n")
 
         presenceArray = {
             0: ("Playing", lambda: discord.Game(name=GAME_NAME_PRESENCE)),
@@ -45,12 +46,12 @@ class Events(commands.Cog):
         if activity:
             description, activityName = activity
             await self.bot.change_presence(activity=activityName())
-            print(f"\nBot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Style.RESET_ALL}: {Fore.CYAN}{description}{Style.RESET_ALL}\n")
+            print(f"\nBot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Fore.WHITE}: {Fore.CYAN}{description}\n")
         else:
-            print(f"\n{Fore.RED}Invalid BOT_PRESENCE value: {BOT_PRESENCE}{Style.RESET_ALL}")
+            print(f"\n{Fore.RED}Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
 
         await self.bot.tree.sync()
-        print(f"{Fore.GREEN}Slash commands synchronized successfully!{Style.RESET_ALL}")
+        print(Fore.GREEN + "Slash commands synchronized successfully!")
 
     async def createImage(self, member, text):
         avatarUrl = str(member.avatar.url)
@@ -98,7 +99,7 @@ class Events(commands.Cog):
 
         if not channel:
             print(
-                f"{Fore.YELLOW}{member}{Style.RESET_ALL} joined, but no System Message Channel available to announce it.")
+                f"{Fore.YELLOW}{member} joined, but no System Message Channel available to announce it.")
             return
         
         text = f'{member.display_name} joined the server!'
@@ -112,7 +113,7 @@ class Events(commands.Cog):
 
         if not channel:
             print(
-                f"{Fore.YELLOW}{member}{Style.RESET_ALL} left, but no System Message Channel available to announce it.")
+                f"{Fore.YELLOW}{member} left, but no System Message Channel available to announce it.")
             return
         
         text = f'{member.display_name} left the server!'

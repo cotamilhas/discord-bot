@@ -10,7 +10,6 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - [x] **Leveling System**: Allow users to gain experience and level up as they send messages.
 - [x] **Logging System**: Track important server events with a comprehensive logging system.
 - [x] **Fun Interactions**: Provide entertainment for server members with interactive commands.
-- [x] **Music**: Play music in voice channels with commands to queue, skip, pause.
 
 
 ## Requirements

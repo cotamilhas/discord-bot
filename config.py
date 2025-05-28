@@ -1,6 +1,9 @@
 import os
 import discord
-from discord.ext import commands
+from discord.ext import commands, ButtonStyle
+from discord.ui import Button, View
+
+DEBUG_MODE = False  # Change this to True if you want to enable debug mode, otherwise False
 
 # Bot token
 TOKEN = ""  # Change this to your bot token
@@ -29,6 +32,8 @@ LEVELS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "levels.json")  #
 
 # Embed color
 EMBED_COLOR = discord.Color.blue()  # Change this to the color you want for your embeds
+NEXT_COLOR = ButtonStyle.green  # Change this to the color you want for your next button
+BACK_COLOR = ButtonStyle.red  # Change this to the color you want for your back button
 
 # Coin Images
 TAILS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "tails.png")  # Change this to the path of your tails image
@@ -36,3 +41,37 @@ HEADS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "heads.png")  # C
 
 # Bot Intents
 INTENTS = discord.Intents.all()  # Change this to the intents you want to use
+
+# YT_DLP Options
+YTDL_SEARCH_OPTS = {
+    'format': 'bestaudio/best',
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'ytsearch',
+    'extract_flat': 'in_playlist',
+    'ignoreerrors': True,
+    'geo_bypass': True,
+    'socket_timeout': 10,
+    'source_address': '0.0.0.0',
+    'noplaylist': True,
+    'compat_opts': {
+        'no-youtube-unavailable-videos': True 
+    }
+}
+
+YTDL_DIRECT_OPTS = {
+    'format': 'bestaudio/best',
+    'quiet': True,
+    'no_warnings': True,
+    'ignoreerrors': True,
+    'geo_bypass': True,
+    'socket_timeout': 10,
+    'source_address': '0.0.0.0',
+    'extract_flat': False
+}
+
+# Spotify API Credentials - Choose WebAPI and get your credentials
+# You can get your credentials from the Spotify Developer Dashboard: https://developer.spotify.com/dashboard/create
+USE_SPOTIFY_API = True  # Change this to True if you want to use the Spotify API, otherwise False
+SPOTIFY_CLIENT_ID = ""  # Change this to your Spotify Client ID
+SPOTIFY_CLIENT_SECRET = ""  # Change this to your Spotify Client Secret
