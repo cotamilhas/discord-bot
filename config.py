@@ -1,7 +1,7 @@
 import os
 import discord
-from discord.ext import commands, ButtonStyle
-from discord.ui import Button, View
+from discord.ext import commands
+from discord import ButtonStyle
 
 DEBUG_MODE = False  # Change this to True if you want to enable debug mode, otherwise False
 
