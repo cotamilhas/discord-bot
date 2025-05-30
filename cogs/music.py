@@ -45,7 +45,7 @@ class QueueView(View):
         
         embed = Embed(
             title="Queue",
-            description=f"Total Songs{len(self.queue)}",
+            description=f"Total Songs: {len(self.queue)}",
             color=EMBED_COLOR
         )
 
