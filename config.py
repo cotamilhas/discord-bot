@@ -63,15 +63,16 @@ YTDL_DIRECT_OPTS = {
     'format': 'bestaudio/best',
     'quiet': True,
     'no_warnings': True,
-    'ignoreerrors': True,
-    'geo_bypass': True,
-    'socket_timeout': 10,
     'source_address': '0.0.0.0',
-    'extract_flat': False
+    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'retries': 3,
+    'http_headers': {
+        'Referer': 'https://www.youtube.com/',
+    },
 }
 
 # Spotify API Credentials - Choose WebAPI and get your credentials
 # You can get your credentials from the Spotify Developer Dashboard: https://developer.spotify.com/dashboard/create
-USE_SPOTIFY_API = True  # Change this to True if you want to use the Spotify API, otherwise False
-SPOTIFY_CLIENT_ID = ""  # Change this to your Spotify Client ID
-SPOTIFY_CLIENT_SECRET = ""  # Change this to your Spotify Client Secret
+USE_SPOTIFY_API = False  # Change this to True if you want to use the Spotify API, otherwise False
+SPOTIFY_CLIENT_ID = ""  # If USE_SPOTIFY_API is True, change this to your Spotify Client ID
+SPOTIFY_CLIENT_SECRET = ""  # If USE_SPOTIFY_API is True, change this to your Spotify Client Secret

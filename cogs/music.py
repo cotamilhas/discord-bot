@@ -9,14 +9,15 @@ import asyncio
 import re
 from config import EMBED_COLOR, YTDL_SEARCH_OPTS, YTDL_DIRECT_OPTS, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, USE_SPOTIFY_API, NEXT_COLOR, BACK_COLOR
 
-sp = None
 if USE_SPOTIFY_API:
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
         client_id=SPOTIFY_CLIENT_ID,
         client_secret=SPOTIFY_CLIENT_SECRET
     ))
+else:
+    sp = None
     
-
+    
 class QueueView(View):
     def __init__(self, queue, page=0):
         super().__init__(timeout=60)
@@ -215,56 +216,59 @@ class Music(commands.Cog):
             self.playing_now[interaction.guild.id] = None
             await vc.disconnect()
             return
-            
+
         title, url, thumbnail = queue.pop(0)
         self.queues[interaction.guild.id] = queue
         self.playing_now[interaction.guild.id] = (title, url)
-        
-        def after_playing(error):
-            if error:
-                print(f"Playback error: {error}")
-            asyncio.run_coroutine_threadsafe(
-                self.play_next(interaction, vc), 
-                self.bot.loop
-            )
-            
-        vc.play(self.create_source(url), after=after_playing)
-        
+
+        async def safe_play_next():
+            await self.play_next(interaction, vc)
+
+        vc.play(self.create_source(url), after=lambda e: self.bot.loop.create_task(safe_play_next()))
+
+        channel = interaction.channel
+        if not channel:
+            return 
+
         embed = Embed(
             title="Now Playing",
             description=f"[{title}]({url})",
             color=EMBED_COLOR
         )
-        embed.set_thumbnail(url=thumbnail or f"https://img.youtube.com/vi/{url.split('v=')[-1]}/hqdefault.jpg")
+        if thumbnail:
+            embed.set_thumbnail(url=thumbnail)
         embed.set_footer(
             text=f"Requested by {interaction.user.display_name}",
             icon_url=interaction.user.display_avatar.url
         )
-        
-        await interaction.followup.send(embed=embed)
+
+        try:
+            await channel.send(embed=embed)
+        except discord.HTTPException as e:
+            print(f"[ERROR] Failed to send 'Now Playing': {e}")
 
     async def process_spotify_playlist(self, interaction, spotify_titles, vc):
         if not spotify_titles:
             return
-            
+
         embed = Embed(description="Processing Spotify playlist...", color=EMBED_COLOR)
         await interaction.followup.send(embed=embed)
-        
+
         for i, title in enumerate(spotify_titles):
             if interaction.guild.id not in self.search_tasks or self.search_tasks[interaction.guild.id].cancelled():
                 return
-                
+
             results = await self.yt_search(title)
             if results:
                 entry = results[0]
                 self.queues.setdefault(interaction.guild.id, []).append(
                     (entry["title"], entry["url"], entry["thumbnail"])
                 )
-                
+
                 if i == 0 and not vc.is_playing():
                     await self.play_next(interaction, vc)
-                    
-            await asyncio.sleep(3)
+
+            await asyncio.sleep(0.5)
 
     @app_commands.command(name="play", description="Play a song or playlist from YouTube or Spotify")
     @app_commands.describe(query="Search term or URL")
@@ -272,18 +276,18 @@ class Music(commands.Cog):
         vc = await self.ensure_voice(interaction)
         if not vc:
             return
-            
+
         await interaction.response.defer()
-        
+
         if interaction.guild.id in self.search_tasks:
             self.search_tasks[interaction.guild.id].cancel()
-            
+
         if self.is_spotify_url(query):
             spotify_titles = await self.extract_spotify_titles(query)
             if not spotify_titles:
                 await interaction.followup.send("Could not process Spotify link.", ephemeral=True)
                 return
-                
+
             task = asyncio.create_task(self.process_spotify_playlist(interaction, spotify_titles, vc))
             self.search_tasks[interaction.guild.id] = task
         else:
@@ -293,27 +297,27 @@ class Music(commands.Cog):
                     embed=Embed(description="No results found.", color=EMBED_COLOR)
                 )
                 return
-                
+
             queue = self.queues.setdefault(interaction.guild.id, [])
             queue.extend((e["title"], e["url"], e["thumbnail"]) for e in entries)
-            
+
             embed = Embed(
                 title="Added to Queue" if len(entries) == 1 else "Playlist Added",
-                description=f"[{entries[0]['title']}]({entries[0]['url']})" if len(entries) == 1 
-                          else f"Added {len(entries)} songs to queue.",
+                description=f"[{entries[0]['title']}]({entries[0]['url']})" if len(entries) == 1
+                            else f"Added {len(entries)} songs to queue.",
                 color=EMBED_COLOR
             )
-            
+
             if len(entries) == 1 and entries[0].get("thumbnail"):
                 embed.set_thumbnail(url=entries[0]["thumbnail"])
-                
+
             embed.set_footer(
                 text=f"Requested by {interaction.user.display_name}",
                 icon_url=interaction.user.display_avatar.url
             )
-            
+
             await interaction.followup.send(embed=embed)
-            
+
             if not vc.is_playing():
                 await self.play_next(interaction, vc)
     
@@ -406,20 +410,16 @@ class Music(commands.Cog):
 
     @app_commands.command(name="nowplaying", description="Show the current song")
     async def nowplaying(self, interaction: discord.Interaction):
-        song = self.playingNow.get(interaction.guild.id)
+        song = self.playing_now.get(interaction.guild.id)
         if song:
             title, url = song
-            embed = discord.Embed(
+            embed = Embed(
                 title="Now Playing",
                 description=f"[{title}]({url})",
                 color=EMBED_COLOR
             )
         else:
-            embed = discord.Embed(
-                description="Nothing is playing.",
-                color=EMBED_COLOR
-            )
-            
+            embed = Embed(description="Nothing is playing.", color=EMBED_COLOR)
         await interaction.response.send_message(embed=embed)
  
 
