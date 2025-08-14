@@ -15,7 +15,7 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 
 ## Requirements
 
-- Python 3.12 or higher
+- Python 3.13 or higher
 - `discord.py` library
 - Any additional dependencies listed in the `requirements.txt` file
 

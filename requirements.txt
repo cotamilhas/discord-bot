@@ -1,7 +1,9 @@
 discord.py==2.4.0
-Pillow==8.3.2
+Pillow==11.3.0
 requests==2.26.0
 colorama==0.4.6
 yt-dlp==2025.4.30
 pynacl==1.5.0
 spotipy==2.25.1
+aiohttp>=3.7.4,<4
+audioop-lts; python_version>='3.13'
