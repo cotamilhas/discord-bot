@@ -3,13 +3,13 @@ import discord
 from discord.ext import commands
 from discord import ButtonStyle
 
-DEBUG_MODE = False  # Change this to True if you want to enable debug mode, otherwise False
+DEBUG_MODE = True  # Change this to True if you want to enable debug mode, otherwise False
 
 # Bot token
 TOKEN = ""  # Change this to your bot token
 
 # Command prefix
-COMMAND_PREFIX = "?"  # Change this to your desired command prefix but since is using slash commands is kinda unnecessary
+COMMAND_PREFIX = "!"  # Change this to your desired command prefix, at the moment only Music Cog uses this prefix
 
 # Font settings
 FONT_PATH = os.path.join(os.path.dirname(__file__), "stuff", "arial.ttf")  # Change this to the path of your font file
