@@ -5,11 +5,36 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from colorama import Fore, init
-from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR, INTENTS
+from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR, INTENTS, DEBUG_MODE
 init(autoreset=True)
 
 
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=INTENTS, help_command=None)
+
+async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.CommandOnCooldown):
+        await interaction.response.send_message(
+            f"Command is currently on cooldown! Try again in **{error.retry_after:.2f}** seconds!",
+            ephemeral=True
+        )
+    elif isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message(
+            "You don't have permission to use this command.",
+            ephemeral=True
+        )
+    else:
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                f"An unexpected error occurred: `{error}`",
+                ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                f"An unexpected error occurred: `{error}`",
+                ephemeral=True
+            )
+
+bot.tree.on_error = on_tree_error
 
 async def loadCogs():
     for filename in os.listdir('./cogs'):
@@ -86,15 +111,27 @@ async def loadCogs():
         embed.set_thumbnail(url=bot.user.avatar.url)
 
         await interaction.response.send_message(embed=embed)
-    
-    @help.error
-    async def error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-        msg = "You do not have the required permissions to use this command." if isinstance(error, app_commands.errors.MissingPermissions) else f"An error occurred: {error}"
-        if not interaction.response.is_done():
-            await interaction.response.send_message(msg, ephemeral=True)
-        else:
-            await interaction.followup.send(msg, ephemeral=True)
-            
+
+    @bot.event
+    async def on_interaction(interaction: discord.Interaction):
+        if not DEBUG_MODE:
+            return
+        if interaction.type == discord.InteractionType.application_command:
+            params = ""
+            if hasattr(interaction, "data") and "options" in interaction.data:
+                options = interaction.data["options"]
+                params = " | Params: " + ", ".join(
+                    f"{opt['name']}={opt.get('value', '')}" for opt in options
+                )
+            if interaction.guild:
+                print(
+                    f"{Fore.CYAN}[COMMAND]: /{interaction.command.name}{params} | User: {interaction.user} | Server: {interaction.guild.name} (ID: {interaction.guild.id})"
+                )
+            else:
+                print(
+                    f"{Fore.CYAN}[COMMAND]: /{interaction.command.name}{params} | User: {interaction.user} | (DM)"
+                )        
+                
 
 if __name__ == "__main__":
     async def main():
