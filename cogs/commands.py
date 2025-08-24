@@ -6,7 +6,6 @@ from PIL import Image
 from colorama import Fore, Style
 from config import EMBED_COLOR
 
-
 class Commands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -55,12 +54,12 @@ class Commands(commands.Cog):
                 await interaction.response.send_message("This user does not have a banner or an accent color set.", ephemeral=True)
                 return
 
-            bannerImage = Image.new("RGB", (600, 200), userColor.to_rgb())
-            imageBuffer = BytesIO()
-            bannerImage.save(imageBuffer, format="PNG")
-            imageBuffer.seek(0)
+            banner_image = Image.new("RGB", (600, 200), userColor.to_rgb())
+            image_buffer = BytesIO()
+            banner_image.save(image_buffer, format="PNG")
+            image_buffer.seek(0)
 
-            bannerFile = discord.File(fp=imageBuffer, filename="banner.png")
+            banner_file = discord.File(fp=image_buffer, filename="banner.png")
             embed.description = "This user has a color as their banner."
             embed.set_image(url="attachment://banner.png")
 
@@ -69,17 +68,18 @@ class Commands(commands.Cog):
                 icon_url=interaction.user.avatar.url
             )
 
-            await interaction.response.send_message(embed=embed, file=bannerFile)
+            await interaction.response.send_message(embed=embed, file=banner_file)
 
     @app_commands.command(name="servericon", description="Displays the server icon, if available.")
+    @app_commands.guild_only()
     async def servericon(self, interaction: discord.Interaction):
-        iconUrl = interaction.guild.icon.url if interaction.guild.icon else None
+        icon_url = interaction.guild.icon.url if interaction.guild.icon else None
         embed = discord.Embed(
             title="Server Icon",
             color=EMBED_COLOR
         )
-        if iconUrl:
-            embed.set_image(url=iconUrl)
+        if icon_url:
+            embed.set_image(url=icon_url)
         else:
             embed.description = "This server does not have an icon."
         embed.set_footer(
@@ -88,23 +88,6 @@ class Commands(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed)
-
-    @banner.error
-    @avatar.error
-    @servericon.error
-    @ping.error
-    async def error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        errorMessage = f"An error occurred: {error}"
-
-        print(f"{Fore.GREEN}[ERROR]{Style.RESET_ALL} {error}")
-
-        try:
-            if not interaction.response.is_done():
-                await interaction.response.send_message(errorMessage, ephemeral=True)
-            else:
-                await interaction.followup.send_message(errorMessage, ephemeral=True)
-        except Exception as e:
-            print(f"[ERROR] Failed to send error message: {e}")
 
 
 async def setup(bot):

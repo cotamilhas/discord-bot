@@ -7,7 +7,6 @@ from colorama import Fore, init
 from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 init(autoreset=True)
 
-
 class Events(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -24,7 +23,7 @@ class Events(commands.Cog):
         else:
             print(f"{Fore.RED}The bot is not connected to any servers.\n")
 
-        presenceArray = {
+        presence_array = {
             0: ("Playing", lambda: discord.Game(name=GAME_NAME_PRESENCE)),
             1: ("Streaming", lambda: discord.Streaming(
                 name=STREAM_NAME_PRESENCE,
@@ -41,11 +40,11 @@ class Events(commands.Cog):
             4: ("Only Online", lambda: None)
         }
 
-        activity = presenceArray.get(BOT_PRESENCE)
+        activity = presence_array.get(BOT_PRESENCE)
 
         if activity:
-            description, activityName = activity
-            await self.bot.change_presence(activity=activityName())
+            description, activity_name = activity
+            await self.bot.change_presence(activity=activity_name())
             print(f"\nBot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Fore.WHITE}: {Fore.CYAN}{description}\n")
         else:
             print(f"\n{Fore.RED}Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
@@ -54,31 +53,31 @@ class Events(commands.Cog):
         print(Fore.GREEN + "Slash commands synchronized successfully!")
 
     async def createImage(self, member, text):
-        avatarUrl = str(member.avatar.url)
+        avatar_url = str(member.avatar.url)
         
-        avatarImg = Image.open(io.BytesIO(requests.get(avatarUrl).content)).convert("RGBA")
-        avatarSize = 370
-        avatarResized = avatarImg.resize((avatarSize, avatarSize), Image.LANCZOS)
+        avatar_img = Image.open(io.BytesIO(requests.get(avatar_url).content)).convert("RGBA")
+        avatar_size = 370
+        avatar_resized = avatar_img.resize((avatar_size, avatar_size), Image.LANCZOS)
         
-        mask = Image.new('L', (avatarSize, avatarSize), 0)
-        ImageDraw.Draw(mask).ellipse((0, 0, avatarSize, avatarSize), fill=255)
+        mask = Image.new('L', (avatar_size, avatar_size), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, avatar_size, avatar_size), fill=255)
         
-        avatarFinal = avatarResized.resize((185, 185), Image.LANCZOS)
-        maskFinal = mask.resize((185, 185), Image.LANCZOS)
+        avatar_final = avatar_resized.resize((185, 185), Image.LANCZOS)
+        mask_final = mask.resize((185, 185), Image.LANCZOS)
         
         background = Image.open(BACKGROUND_IMAGE).convert("RGBA").resize((500, 300))
         
-        contourSize = 191 * 2
-        contour = Image.new('RGBA', (contourSize, contourSize), (255, 255, 255, 0))
-        contourDraw = ImageDraw.Draw(contour)
-        contourDraw.ellipse((0, 0, contourSize, contourSize), outline=(255, 255, 255, 255), width=6 * 2)
+        contour_size = 191 * 2
+        contour = Image.new('RGBA', (contour_size, contour_size), (255, 255, 255, 0))
+        contour_draw = ImageDraw.Draw(contour)
+        contour_draw.ellipse((0, 0, contour_size, contour_size), outline=(255, 255, 255, 255), width=6 * 2)
         
-        contourFinal = contour.resize((191, 191), Image.LANCZOS)
-        contourFinal.paste(avatarFinal, (3, 3), maskFinal)
+        contour_final = contour.resize((191, 191), Image.LANCZOS)
+        contour_final.paste(avatar_final, (3, 3), mask_final)
         
         contourX = (500 - 191) // 2
         contourY = (300 - 191) // 2
-        background.paste(contourFinal, (contourX, contourY), contourFinal)
+        background.paste(contour_final, (contourX, contourY), contour_final)
         
         draw = ImageDraw.Draw(background)
         font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
