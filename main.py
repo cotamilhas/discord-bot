@@ -135,6 +135,12 @@ async def loadCogs():
 
 if __name__ == "__main__":
     async def main():
-        await loadCogs()
-        await bot.start(TOKEN)
+        try:
+            await loadCogs()
+            await bot.start(TOKEN)
+        except discord.LoginFailure:
+            print("The token provided is not valid! Please check your token and try again.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            
     asyncio.run(main())
