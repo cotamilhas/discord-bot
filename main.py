@@ -36,7 +36,7 @@ async def on_tree_error(interaction: discord.Interaction, error: app_commands.Ap
 
 bot.tree.on_error = on_tree_error
 
-async def loadCogs():
+async def load_cogs():
     for filename in os.listdir('./cogs'):
         if filename.endswith('.py') and filename != '__init__.py':
             extension = f"cogs.{filename[:-3]}"
@@ -136,11 +136,11 @@ async def loadCogs():
 if __name__ == "__main__":
     async def main():
         try:
-            await loadCogs()
+            await load_cogs()
             await bot.start(TOKEN)
         except discord.LoginFailure:
             print("The token provided is not valid! Please check your token and try again.")
         except Exception as e:
             print(f"An error occurred: {e}")
-            
+
     asyncio.run(main())

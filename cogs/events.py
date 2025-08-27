@@ -4,6 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 import requests
 from colorama import Fore, init
+import sys
 from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 init(autoreset=True)
 
@@ -13,8 +14,16 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        if not hasattr(self.bot, 'appinfo'):
+            self.bot.appinfo = await self.bot.application_info()
+            self.bot.owner_id = self.bot.appinfo.owner.id
+        
         print(f"\n{Fore.GREEN}Bot is Online!")
         print(f"Logged in as {Fore.GREEN}{self.bot.user.name} {Fore.YELLOW}({self.bot.user.id})\n")
+
+        print(f"{Fore.CYAN}Owner: {Fore.GREEN}{self.bot.appinfo.owner} {Fore.YELLOW}({self.bot.appinfo.owner.id})")
+        print(f"{Fore.CYAN}Python Version: {Fore.GREEN}{sys.version}")
+        print(f"{Fore.CYAN}Command Prefix: {Fore.GREEN}{self.bot.command_prefix}")
 
         if self.bot.guilds:
             print(f"{Fore.CYAN}Guilds connected to:")
