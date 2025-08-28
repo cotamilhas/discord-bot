@@ -111,34 +111,6 @@ class Moderation(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def reload_cogs(self):
-        print(f"{Fore.LIGHTWHITE_EX}Reloading cogs...")
-        for filename in os.listdir('./cogs'):
-            if filename.endswith('.py') and filename != '__init__.py':
-                extension = f"cogs.{filename[:-3]}"
-                try:
-                    try:
-                        await self.bot.reload_extension(extension)
-                        print(f"Cog reloaded: {Fore.CYAN}{extension}")
-                    except commands.ExtensionNotLoaded:
-                        await self.bot.load_extension(extension)
-                        print(f"Cog loaded: {Fore.GREEN}{extension}")
-                except Exception as e:
-                    print(f"{Fore.RED}Error with {extension}: {e}")
-
-        print(f"{Fore.GREEN}Cogs reloaded.")
-
-    # BOT OWNER ONLY
-    @app_commands.command(name="reload", description="Reloads all cogs.")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def reload(self, interaction: discord.Interaction):
-        if interaction.user.id != self.bot.owner_id:
-            return await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
-        
-        await interaction.response.defer(ephemeral=True)
-        await self.reload_cogs()
-        await interaction.followup.send("All cogs have been reloaded.", ephemeral=True)
-
     @app_commands.command(name="ban", description="Ban a user from the server. (Mods only)")
     @app_commands.describe(member="The user to be banned.", reason="The reason for the ban.")
     @app_commands.checks.has_permissions(ban_members=True)
