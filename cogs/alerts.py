@@ -166,13 +166,12 @@ class StreamAlerts(commands.Cog):
                                 color=0xff0000,
                                 timestamp=datetime.now()
                             )
-                            embed.add_field(name="Title", value=title, inline=False)
+                            embed.add_field(name=f"**{channel_name}** just uploaded a new video!", value=title, inline=False)
                             embed.add_field(name="Watch on YouTube", value=url, inline=False)
                             embed.set_image(url=f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
-                            embed.set_footer(text="YouTube", icon_url="https://www.youtube.com/s/desktop/8e0c8a41/img/favicon_144x144.png")
+                            embed.set_footer(text="YouTube", icon_url="https://img.icons8.com/?size=100&id=19318&format=png")
 
                             await channel.send(embed=embed)
-                            await channel.send(url)
                 except Exception as e:
                     print(f"Error checking YouTube channel {yt_channel}: {e}")
 
@@ -210,16 +209,18 @@ class StreamAlerts(commands.Cog):
 
                             embed = discord.Embed(
                                 title="Twitch Stream Live",
-                                description=f"**{twitch_channel}** is now live!",
                                 color=0x9146ff,
                                 timestamp=datetime.now()
                             )
-                            embed.add_field(name="Title", value=title, inline=False)
-                            embed.add_field(name="Game", value=game_name, inline=True)
+                            embed.add_field(name=f"**{twitch_channel}** is now live!", value=title, inline=False)
+
+                            if game_name:
+                                embed.add_field(name="Game", value=game_name, inline=True)
+                                
                             embed.add_field(name="Viewers", value=str(viewer_count), inline=True)
                             embed.add_field(name="Watch on Twitch", value=url, inline=False)
                             embed.set_image(url=thumbnail)
-                            embed.set_footer(text="Twitch", icon_url="https://static.twitchcdn.net/assets/favicon-32-e29e246c157142c94346.png")
+                            embed.set_footer(text="Twitch", icon_url="https://img.icons8.com/?size=100&id=18103&format=png")
 
                             await channel.send(embed=embed)
                 except Exception as e:
