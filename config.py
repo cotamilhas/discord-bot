@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from discord import ButtonStyle
 
-DEBUG_MODE = True  # Change this to True if you want to enable debug mode, otherwise False
+DEBUG_MODE = False  # Change this to True if you want to enable debug mode, otherwise False
 
 # Bot token
 TOKEN = ""  # Change this to your bot token
@@ -76,3 +76,9 @@ YTDL_DIRECT_OPTS = {
 USE_SPOTIFY_API = False  # Change this to True if you want to use the Spotify API, otherwise False
 SPOTIFY_CLIENT_ID = ""  # If USE_SPOTIFY_API is True, change this to your Spotify Client ID
 SPOTIFY_CLIENT_SECRET = ""  # If USE_SPOTIFY_API is True, change this to your Spotify Client Secret
+
+ALERTS = False  # Change this to True if you want to enable stream alerts, otherwise False
+ALERTS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "alerts.json")  # Change this to the path of your alerts file
+YOUTUBE_API_KEY = ""  # Change this to your YouTube API key
+TWITCH_CLIENT_ID = ""  # Change this to your Twitch Client ID
+TWITCH_CLIENT_SECRET = ""  # Change this to your Twitch Client Secret
