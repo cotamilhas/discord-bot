@@ -162,7 +162,6 @@ class StreamAlerts(commands.Cog):
 
                             embed = discord.Embed(
                                 title="New YouTube Video",
-                                description=f"**{channel_name}** just uploaded a new video!",
                                 color=0xff0000,
                                 timestamp=datetime.now()
                             )
