@@ -20,7 +20,6 @@ class Events(commands.Cog):
         
         print(f"\n{Fore.GREEN}Bot is Online!")
         print(f"Logged in as {Fore.GREEN}{self.bot.user.name} {Fore.YELLOW}({self.bot.user.id})\n")
-
         print(f"{Fore.CYAN}Owner: {Fore.GREEN}{self.bot.appinfo.owner} {Fore.YELLOW}({self.bot.appinfo.owner.id})")
         print(f"{Fore.CYAN}Python Version: {Fore.GREEN}{sys.version}")
         print(f"{Fore.CYAN}Command Prefix: {Fore.GREEN}{self.bot.command_prefix}")

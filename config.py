@@ -32,9 +32,6 @@ LEVELS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "levels.json")  #
 
 ALERTS = False  # Change this to True if you want to enable alerts, otherwise False
 ALERTS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "alerts.json")  # Change this to the path of your alerts file
-YOUTUBE_API_KEY = ""  # Change this to your YouTube API key
-TWITCH_CLIENT_ID = ""  # Change this to your Twitch Client ID
-TWITCH_CLIENT_SECRET = ""  # Change this to your Twitch Client Secret
 
 # Embed color
 EMBED_COLOR = discord.Color.blue()  # Change this to the color you want for your embeds
