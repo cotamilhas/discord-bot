@@ -111,7 +111,8 @@ class StreamAlerts(commands.Cog):
                             
                             game_url = f"https://decapi.me/twitch/game/{channel_name.lower()}"
                             async with self.session.get(game_url) as game_response:
-                                game_name = await game_response.text() if game_response.status == 200 else "Unknown Game"
+                                if game_response.status == 200:
+                                    text = await game_response.text()
                                 
                                 viewers_url = f"https://decapi.me/twitch/viewercount/{channel_name.lower()}"
                                 async with self.session.get(viewers_url) as viewers_response:
@@ -123,7 +124,7 @@ class StreamAlerts(commands.Cog):
                                     return {
                                         "id": f"{channel_name}_{datetime.now().timestamp()}",
                                         "title": title.strip(),
-                                        "game_name": game_name.strip(),
+                                        "game_name": text.strip(),
                                         "viewer_count": viewer_count.strip(),
                                         "channel_name": channel_name,
                                         "thumbnail_url": f"https://static-cdn.jtvnw.net/previews-ttv/live_user_{channel_name.lower()}-1920x1080.jpg",
@@ -211,7 +212,7 @@ class StreamAlerts(commands.Cog):
                                 color=0x9146ff,
                                 timestamp=datetime.now(timezone.utc)
                             )
-                            if stream['game_name'] != "Unknown Game":
+                            if stream['game_name'] != "":
                                 embed.add_field(name="Game", value=stream['game_name'], inline=True)
                             if stream['viewer_count'] != "Unknown":
                                 embed.add_field(name="Viewers", value=stream['viewer_count'], inline=True)
