@@ -11,7 +11,7 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - [x] **Logging System**: Track important server events with a comprehensive logging system.
 - [x] **Fun Interactions**: Provide entertainment for server members with interactive commands.
 - [x] **Music**: Play music in voice channels with commands to queue, skip, pause.
-
+- [x] **Alerts System**: Get notified about Twitch/YouTube streams, server updates, or other custom alerts.
 
 ## Requirements
 
