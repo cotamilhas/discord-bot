@@ -25,7 +25,7 @@ class Events(commands.Cog):
         print(f"{Fore.CYAN}Command Prefix: {Fore.GREEN}{self.bot.command_prefix}")
 
         if self.bot.guilds:
-            print(f"{Fore.CYAN}Guilds connected to:")
+            print(f"\n{Fore.CYAN}Guilds connected to:")
             for guild in self.bot.guilds:
                 print(f"{Fore.GREEN}{guild.name} {Fore.YELLOW}({guild.id})")
         else:

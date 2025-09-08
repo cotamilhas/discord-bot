@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import app_commands, Interaction, Embed, ButtonStyle
+from discord import Interaction, Embed
 from discord.ui import View, Button
 import yt_dlp
 import spotipy

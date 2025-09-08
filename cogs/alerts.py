@@ -16,6 +16,8 @@ class StreamAlerts(commands.Cog):
         self.last_checked = {'youtube': {}, 'twitch': {}}
         self.session = None
         self.twitch_online_status = {}
+        self.retry_count = 0
+        self.max_retries = 3
 
         if not os.path.exists(ALERTS_FILE):
             os.makedirs(os.path.dirname(ALERTS_FILE), exist_ok=True)
@@ -32,14 +34,22 @@ class StreamAlerts(commands.Cog):
         self.twitch_check.start()
 
     async def create_session(self):
-        if not self.session or self.session.closed:
-            connector = aiohttp.TCPConnector(limit_per_host=10, ttl_dns_cache=300)
-            timeout = aiohttp.ClientTimeout(total=15)
-            self.session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+        try:
+            if not self.session or self.session.closed:
+                connector = aiohttp.TCPConnector(limit_per_host=10, ttl_dns_cache=300, limit=0)
+                timeout = aiohttp.ClientTimeout(total=30, sock_connect=15, sock_read=15)
+                self.session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+        except Exception as e:
+            print(f"Error creating session: {e}")
+            await asyncio.sleep(5)
+            await self.create_session()
 
     async def close_session(self):
-        if self.session and not self.session.closed:
-            await self.session.close()
+        try:
+            if self.session and not self.session.closed:
+                await self.session.close()
+        except Exception as e:
+            print(f"Error closing session: {e}")
 
     def load_alerts(self):
         try:
@@ -62,170 +72,204 @@ class StreamAlerts(commands.Cog):
         except Exception as e:
             print(f"Error saving alerts: {e}")
 
+    async def safe_request(self, url, max_retries=3):
+        for attempt in range(max_retries):
+            try:
+                await self.create_session()
+                async with self.session.get(url) as response:
+                    if response.status == 200:
+                        return await response.text()
+                    elif response.status == 429:
+                        wait_time = int(response.headers.get('Retry-After', 60))
+                        print(f"Rate limited. Waiting {wait_time} seconds...")
+                        await asyncio.sleep(wait_time)
+                        continue
+                    else:
+                        print(f"Request failed with status {response.status}")
+                        await asyncio.sleep(5)
+            except (aiohttp.ClientConnectionError, aiohttp.ServerDisconnectedError, 
+                   aiohttp.ClientResponseError, asyncio.TimeoutError) as e:
+                print(f"Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    raise
+            except Exception as e:
+                print(f"Unexpected error in request: {e}")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)
+                else:
+                    raise
+        return None
+
     async def check_youtube_channel(self, channel_id: str):
-        await self.create_session()
         url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
         try:
-            async with self.session.get(url) as response:
-                if response.status == 200:
-                    xml_data = await response.text()
-                    root = ET.fromstring(xml_data)
+            xml_data = await self.safe_request(url)
+            if not xml_data:
+                return None
 
-                    entry = root.find("{http://www.w3.org/2005/Atom}entry")
-                    if entry is None:
-                        return None
+            root = ET.fromstring(xml_data)
+            entry = root.find("{http://www.w3.org/2005/Atom}entry")
+            if entry is None:
+                return None
 
-                    video_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
-                    title = entry.find("{http://www.w3.org/2005/Atom}title").text
-                    author = entry.find("{http://www.w3.org/2005/Atom}author").find("{http://www.w3.org/2005/Atom}name").text
+            video_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
+            title = entry.find("{http://www.w3.org/2005/Atom}title").text
+            author = entry.find("{http://www.w3.org/2005/Atom}author").find("{http://www.w3.org/2005/Atom}name").text
 
-                    return {
-                        "id": {"videoId": video_id},
-                        "snippet": {
-                            "title": title,
-                            "channelTitle": author
-                        }
-                    }
+            return {
+                "id": {"videoId": video_id},
+                "snippet": {
+                    "title": title,
+                    "channelTitle": author
+                }
+            }
+        except ET.ParseError as e:
+            print(f"[YouTube] XML parse error for channel {channel_id}: {e}")
         except Exception as e:
-            print(f"YouTube RSS error: {e}")
+            print(f"[YouTube] Unexpected error for channel {channel_id}: {e}")
 
         return None
 
     async def check_twitch_channel(self, channel_name: str):
-        await self.create_session()
-        
-        uptime_url = f"https://decapi.me/twitch/uptime/{channel_name.lower()}"
-        
+        endpoints = [
+            f"https://decapi.me/twitch/uptime/{channel_name.lower()}",
+            f"https://decapi.me/twitch/title/{channel_name.lower()}",
+            f"https://decapi.me/twitch/game/{channel_name.lower()}",
+            f"https://decapi.me/twitch/viewercount/{channel_name.lower()}",
+            f"https://decapi.me/twitch/avatar/{channel_name.lower()}"
+        ]
+
         try:
-            async with self.session.get(uptime_url) as response:
-                if response.status == 200:
-                    text = await response.text()
-                    if f"{channel_name} is offline" in text.lower():
-                        return None
-                    
-                    title_url = f"https://decapi.me/twitch/title/{channel_name.lower()}"
-                    async with self.session.get(title_url) as title_response:
-                        if title_response.status == 200:
-                            title = await title_response.text()
-                            
-                            game_url = f"https://decapi.me/twitch/game/{channel_name.lower()}"
-                            async with self.session.get(game_url) as game_response:
-                                if game_response.status == 200:
-                                    text = await game_response.text()
-                                
-                                viewers_url = f"https://decapi.me/twitch/viewercount/{channel_name.lower()}"
-                                async with self.session.get(viewers_url) as viewers_response:
-                                    viewer_count = await viewers_response.text() if viewers_response.status == 200 else "Unknown"
+            results = []
+            for url in endpoints:
+                result = await self.safe_request(url)
+                results.append(result.strip() if result else "Unknown")
+            
+            uptime, title, game, viewers, avatar = results
 
-                                    async with self.session.get(f"https://decapi.me/twitch/avatar/{channel_name.lower()}") as avatar_response:
-                                        avatar = await avatar_response.text() if avatar_response.status == 200 else None
-                                    
-                                    return {
-                                        "id": f"{channel_name}_{datetime.now().timestamp()}",
-                                        "title": title.strip(),
-                                        "game_name": text.strip(),
-                                        "viewer_count": viewer_count.strip(),
-                                        "channel_name": channel_name,
-                                        "thumbnail_url": f"https://static-cdn.jtvnw.net/previews-ttv/live_user_{channel_name.lower()}-1920x1080.jpg",
-                                        "avatar_url": avatar
-                                    }
+            if f"{channel_name} is offline" in uptime.lower() or "offline" in uptime.lower():
+                return None
+
+            return {
+                "id": f"{channel_name}_{datetime.now().timestamp()}",
+                "title": title if title != "Unknown" else "No title",
+                "game_name": game if game != "Unknown" else "",
+                "viewer_count": viewers if viewers != "Unknown" else "Unknown",
+                "channel_name": channel_name,
+                "thumbnail_url": f"https://static-cdn.jtvnw.net/previews-ttv/live_user_{channel_name.lower()}-1920x1080.jpg",
+                "avatar_url": avatar if avatar != "Unknown" else None
+            }
         except Exception as e:
-            print(f"Twitch decapi error: {e}")
-
-        return None
+            print(f"Twitch decapi error for {channel_name}: {e}")
+            return None
 
     @tasks.loop(minutes=5)
     async def youtube_check(self):
-        await self.bot.wait_until_ready()
+        try:
+            await self.bot.wait_until_ready()
 
-        if not self.active_alerts:
-            return
+            if not self.active_alerts:
+                return
 
-        for guild_id, config in list(self.active_alerts.items()):
-            if not config.get('youtube'):
-                continue
+            for guild_id, config in list(self.active_alerts.items()):
+                if not config.get('youtube'):
+                    continue
 
-            channel = self.bot.get_channel(config['channel_id'])
-            if not channel:
-                continue
+                channel = self.bot.get_channel(config['channel_id'])
+                if not channel:
+                    continue
 
-            for yt_channel in config['youtube']:
-                try:
-                    video = await self.check_youtube_channel(yt_channel)
-                    if video:
-                        video_id = video['id']['videoId']
-                        last_video = self.last_checked['youtube'].get(yt_channel)
+                for yt_channel in config['youtube']:
+                    try:
+                        video = await self.check_youtube_channel(yt_channel)
+                        if video:
+                            video_id = video['id']['videoId']
+                            last_video = self.last_checked['youtube'].get(yt_channel)
 
-                        if last_video != video_id:
-                            self.last_checked['youtube'][yt_channel] = video_id
-                            self.save_alerts()
+                            if last_video != video_id:
+                                self.last_checked['youtube'][yt_channel] = video_id
+                                self.save_alerts()
 
-                            title = video['snippet']['title']
-                            channel_name = video['snippet']['channelTitle']
-                            url = f"https://www.youtube.com/watch?v={video_id}"
+                                title = video['snippet']['title']
+                                channel_name = video['snippet']['channelTitle']
+                                url = f"https://www.youtube.com/watch?v={video_id}"
 
-                            embed = discord.Embed(
-                                title=title,
-                                url=url,
-                                description=f"New video uploaded by **{channel_name}**",
-                                color=discord.Color.red(),
-                                timestamp=datetime.now(timezone.utc)
-                            )
-                            embed.set_image(url=f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
-                            embed.set_footer(text="YouTube", icon_url="https://img.icons8.com/?size=100&id=19318&format=png")
+                                embed = discord.Embed(
+                                    title=title,
+                                    url=url,
+                                    description=f"New video uploaded by **{channel_name}**",
+                                    color=discord.Color.red(),
+                                    timestamp=datetime.now(timezone.utc)
+                                )
+                                embed.set_image(url=f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
+                                embed.set_footer(text="YouTube", icon_url="https://img.icons8.com/?size=100&id=19318&format=png")
 
-                            await channel.send(embed=embed)
-                except Exception as e:
-                    print(f"Error checking YouTube channel {yt_channel}: {e}")
+                                await channel.send(embed=embed)
+                    except Exception as e:
+                        print(f"Error checking YouTube channel {yt_channel}: {e}")
+                        continue
+        except Exception as e:
+            print(f"Critical error in youtube_check: {e}")
+            await asyncio.sleep(60)
+            self.youtube_check.restart()
 
     @tasks.loop(minutes=3)
     async def twitch_check(self):
-        await self.bot.wait_until_ready()
+        try:
+            await self.bot.wait_until_ready()
 
-        if not self.active_alerts:
-            return
+            if not self.active_alerts:
+                return
 
-        for guild_id, config in list(self.active_alerts.items()):
-            if not config.get('twitch'):
-                continue
+            for guild_id, config in list(self.active_alerts.items()):
+                if not config.get('twitch'):
+                    continue
 
-            channel = self.bot.get_channel(config['channel_id'])
-            if not channel:
-                continue
+                channel = self.bot.get_channel(config['channel_id'])
+                if not channel:
+                    continue
 
-            for twitch_channel in config['twitch']:
-                try:
-                    stream = await self.check_twitch_channel(twitch_channel)
-                    stream_key = f"{guild_id}_{twitch_channel}"
-                    
-                    if stream:
-                        if not self.twitch_online_status.get(stream_key, False):
-                            self.twitch_online_status[stream_key] = True
-                            
-                            url = f"https://www.twitch.tv/{twitch_channel}"
-
-                            embed = discord.Embed(
-                                title=f"{stream['channel_name']} is live now!",
-                                url=url,
-                                description=stream['title'],
-                                color=0x9146ff,
-                                timestamp=datetime.now(timezone.utc)
-                            )
-                            if stream['game_name'] != "":
-                                embed.add_field(name="Game", value=stream['game_name'], inline=True)
-                            if stream['viewer_count'] != "Unknown":
-                                embed.add_field(name="Viewers", value=stream['viewer_count'], inline=True)
-                            embed.set_image(url=stream['thumbnail_url'])
-                            embed.set_footer(text="Twitch", icon_url="https://img.icons8.com/?size=100&id=18103&format=png")
-                            embed.set_thumbnail(url=stream.get('avatar_url'))
-
-                            await channel.send(embed=embed)
-                    else:
-                        self.twitch_online_status[stream_key] = False
+                for twitch_channel in config['twitch']:
+                    try:
+                        stream = await self.check_twitch_channel(twitch_channel)
+                        stream_key = f"{guild_id}_{twitch_channel}"
                         
-                except Exception as e:
-                    print(f"Error checking Twitch channel {twitch_channel}: {e}")
+                        if stream:
+                            if not self.twitch_online_status.get(stream_key, False):
+                                self.twitch_online_status[stream_key] = True
+                                
+                                url = f"https://www.twitch.tv/{twitch_channel}"
+
+                                embed = discord.Embed(
+                                    title=f"{stream['channel_name']} is live now!",
+                                    url=url,
+                                    description=stream['title'],
+                                    color=0x9146ff,
+                                    timestamp=datetime.now(timezone.utc)
+                                )
+                                if stream['game_name'] != "":
+                                    embed.add_field(name="Game", value=stream['game_name'], inline=True)
+                                if stream['viewer_count'] != "Unknown":
+                                    embed.add_field(name="Viewers", value=stream['viewer_count'], inline=True)
+                                embed.set_image(url=stream['thumbnail_url'])
+                                embed.set_footer(text="Twitch", icon_url="https://img.icons8.com/?size=100&id=18103&format=png")
+                                if stream.get('avatar_url'):
+                                    embed.set_thumbnail(url=stream.get('avatar_url'))
+
+                                await channel.send(embed=embed)
+                        else:
+                            self.twitch_online_status[stream_key] = False
+                            
+                    except Exception as e:
+                        print(f"Error checking Twitch channel {twitch_channel}: {e}")
+                        continue
+        except Exception as e:
+            print(f"Critical error in twitch_check: {e}")
+            await asyncio.sleep(60)
+            self.twitch_check.restart()
 
     @youtube_check.before_loop
     @twitch_check.before_loop
@@ -234,10 +278,13 @@ class StreamAlerts(commands.Cog):
         await self.create_session()
 
     def cog_unload(self):
-        self.youtube_check.cancel()
-        self.twitch_check.cancel()
-        self.save_alerts()
-        asyncio.create_task(self.close_session())
+        try:
+            self.youtube_check.cancel()
+            self.twitch_check.cancel()
+            self.save_alerts()
+            asyncio.create_task(self.close_session())
+        except Exception as e:
+            print(f"Error in cog_unload: {e}")
 
     alert_group = app_commands.Group(name="alert", description="Stream alert configuration")
 

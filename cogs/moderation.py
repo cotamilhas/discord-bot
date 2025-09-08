@@ -1,11 +1,8 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-from discord import Embed
-import asyncio
 from colorama import Fore, init
 import datetime
-import os
 init(autoreset=True)
 
 class UnbanView(discord.ui.View):

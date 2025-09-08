@@ -4,8 +4,8 @@ from discord import app_commands
 import json
 from colorama import Fore, Style, init
 from config import SERVER_OPTIONS, EMBED_COLOR
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List
+from datetime import datetime, timezone
+from typing import Optional
 import asyncio
 
 init(autoreset=True)
