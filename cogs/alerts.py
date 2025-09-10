@@ -286,6 +286,7 @@ class StreamAlerts(commands.Cog):
         except Exception as e:
             print(f"Error in cog_unload: {e}")
 
+    # TO BE CHANGED!
     alert_group = app_commands.Group(name="alert", description="Stream alert configuration")
 
     @alert_group.command(name="channel", description="Set the channel for stream alerts")

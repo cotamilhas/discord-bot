@@ -34,6 +34,16 @@ class AutoRole(commands.Cog):
         data[guild_id][key] = value
         self.save_config(data)
 
+    @commands.Cog.listener()
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+        guild_id = str(after.id)
+        data = self.load_config()
+
+        if guild_id in data:
+            if data[guild_id].get("server_name") != after.name:
+                data[guild_id]["server_name"] = after.name
+                self.save_config(data)
+
     @app_commands.command(name="autorole", description="Set or clear the automatic role for new members. (Admin only)")
     @app_commands.choices(mode=[
         app_commands.Choice(name="Set Role", value="setRole"),

@@ -327,6 +327,12 @@ class ServerLogs(commands.Cog):
 
         if before.name != after.name:
             changes.append(f"**Name:** {before.name} → {after.name}")
+            data = self.load_config()
+            guild_id = str(after.id)
+            
+            if guild_id in data:
+                data[guild_id]["server_name"] = after.name
+                self.save_config(data)
 
         if before.description != after.description:
             changes.append(f"**Description:** {before.description or 'None'} → {after.description or 'None'}")

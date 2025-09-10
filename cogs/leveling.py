@@ -30,6 +30,16 @@ class Leveling(commands.Cog):
 
     def get_required_xp(self, level):
         return 100 + (level - 1) * 50
+    
+    @commands.Cog.listener()
+    async def on_guild_update(self, before: discord.Guild, after: discord.Guild):
+        guild_id = str(after.id)
+        guild_name = after.name
+
+        if guild_id in self.levels:
+            if self.levels[guild_id]["server_name"] != guild_name:
+                self.levels[guild_id]["server_name"] = guild_name
+                self.save_levels()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -42,6 +52,8 @@ class Leveling(commands.Cog):
 
         if guild_id not in self.levels:
             self.levels[guild_id] = {"server_name": guild_name, "members": {}}
+        else:
+            self.levels[guild_id]["server_name"] = guild_name
 
         if member_id not in self.levels[guild_id]["members"]:
             self.levels[guild_id]["members"][member_id] = {"xp": 0, "level": 1}
