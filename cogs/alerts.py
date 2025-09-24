@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 import json
 import os
-from config import ALERTS, ALERTS_FILE
+from config import ALERTS, ALERTS_FILE, EMBED_COLOR
 
 class StreamAlerts(commands.Cog):
     def __init__(self, bot):
@@ -286,86 +286,92 @@ class StreamAlerts(commands.Cog):
         except Exception as e:
             print(f"Error in cog_unload: {e}")
 
-    # TO BE CHANGED!
-    alert_group = app_commands.Group(name="alert", description="Stream alert configuration")
+    alerts = app_commands.Group(name="alerts", description="Manage stream alerts")
 
-    @alert_group.command(name="channel", description="Set the channel for stream alerts")
-    async def alert_channel(self, interaction: discord.Interaction):
+    @alerts.command(name="channel", description="Set the channel for stream alerts")
+    @app_commands.guild_only()
+    async def alerts_channel(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         guild_id = str(interaction.guild.id)
-        
+
+        if channel is None:
+            channel = interaction.channel
+
         if guild_id not in self.active_alerts:
-            self.active_alerts[guild_id] = {"channel_id": interaction.channel.id, "youtube": [], "twitch": []}
+            self.active_alerts[guild_id] = {"channel_id": channel.id, "youtube": [], "twitch": []}
         else:
-            self.active_alerts[guild_id]["channel_id"] = interaction.channel.id
-            
-        self.save_alerts()
-        await interaction.response.send_message(f"Alert channel set to {interaction.channel.mention}")
+            self.active_alerts[guild_id]["channel_id"] = channel.id
 
-    @alert_group.command(name="youtube", description="Add or remove a YouTube channel")
-    @app_commands.describe(action="Add or remove", channel_id="YouTube channel ID")
-    async def alert_youtube(self, interaction: discord.Interaction, action: str, channel_id: str):
+        self.save_alerts()
+        await interaction.response.send_message(f"Alerts will be sent to {channel.mention}")
+
+    @alerts.command(name="youtube", description="Add or remove a YouTube channel")
+    @app_commands.describe(action="Choose add or remove", channel_id="YouTube channel ID")
+    @app_commands.guild_only()
+    @app_commands.choices(action=[
+        app_commands.Choice(name="add", value="add"),
+        app_commands.Choice(name="remove", value="remove")
+    ])
+    async def alerts_youtube(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_id: str):
         guild_id = str(interaction.guild.id)
 
         if guild_id not in self.active_alerts:
-            await interaction.response.send_message("Please set an alert channel first with `/alert channel`")
+            await interaction.response.send_message("Set an alert channel first with `/alerts channel`")
             return
 
         config = self.active_alerts[guild_id]
 
-        if action.lower() == "add":
+        if action.value == "add":
             if channel_id not in config["youtube"]:
                 config["youtube"].append(channel_id)
                 self.save_alerts()
-                await interaction.response.send_message(f"YouTube alert added for channel **{channel_id}**")
+                await interaction.response.send_message(f"YouTube alert added for **{channel_id}**")
             else:
                 await interaction.response.send_message("This channel is already in the list.")
 
-        elif action.lower() == "remove":
+        elif action.value == "remove":
             if channel_id in config["youtube"]:
                 config["youtube"].remove(channel_id)
                 self.save_alerts()
-                await interaction.response.send_message(f"YouTube alert removed for channel **{channel_id}**")
+                await interaction.response.send_message(f"YouTube alert removed for **{channel_id}**")
             else:
                 await interaction.response.send_message("This channel is not in the list.")
-        else:
-            await interaction.response.send_message("Invalid action. Use 'add' or 'remove'.")
 
-    @alert_group.command(name="twitch", description="Add or remove a Twitch channel")
-    @app_commands.describe(action="Add or remove", channel_name="Twitch channel name")
-    async def alert_twitch(self, interaction: discord.Interaction, action: str, channel_name: str):
+    @alerts.command(name="twitch", description="Add or remove a Twitch channel")
+    @app_commands.describe(action="Choose add or remove", channel_name="Twitch channel name")
+    @app_commands.guild_only()
+    @app_commands.choices(action=[
+        app_commands.Choice(name="add", value="add"),
+        app_commands.Choice(name="remove", value="remove")
+    ])
+    async def alerts_twitch(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_name: str):
         guild_id = str(interaction.guild.id)
 
-        if not ALERTS:
-            await interaction.response.send_message("Twitch alerts are disabled in config.py.")
-            return
-
         if guild_id not in self.active_alerts:
-            await interaction.response.send_message("Please set an alert channel first with `/alert channel`")
+            await interaction.response.send_message("Set an alert channel first with `/alerts channel`")
             return
 
         config = self.active_alerts[guild_id]
 
-        if action.lower() == "add":
+        if action.value == "add":
             if channel_name.lower() not in [c.lower() for c in config["twitch"]]:
                 config["twitch"].append(channel_name)
                 self.save_alerts()
-                await interaction.response.send_message(f"Twitch alert added for channel **{channel_name}**")
+                await interaction.response.send_message(f"Twitch alert added for **{channel_name}**")
             else:
                 await interaction.response.send_message("This channel is already in the list.")
 
-        elif action.lower() == "remove":
+        elif action.value == "remove":
             for channel in config["twitch"]:
                 if channel.lower() == channel_name.lower():
                     config["twitch"].remove(channel)
                     self.save_alerts()
-                    await interaction.response.send_message(f"Twitch alert removed for channel **{channel}**")
+                    await interaction.response.send_message(f"Twitch alert removed for **{channel}**")
                     return
             await interaction.response.send_message("This channel is not in the list.")
-        else:
-            await interaction.response.send_message("Invalid action. Use 'add' or 'remove'.")
 
-    @alert_group.command(name="list", description="List all configured alerts")
-    async def alert_list(self, interaction: discord.Interaction):
+    @alerts.command(name="list", description="List all configured alerts")
+    @app_commands.guild_only()
+    async def alerts_list(self, interaction: discord.Interaction):
         guild_id = str(interaction.guild.id)
 
         if guild_id not in self.active_alerts or (

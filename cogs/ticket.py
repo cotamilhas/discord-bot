@@ -36,6 +36,13 @@ class TicketPanel(discord.ui.View):
         }
 
         channel = await guild.create_text_channel(f"ticket-{user.name}", overwrites=overwrites)
+
+        data = load_config()
+        guild_id = str(guild.id)
+        if "open_tickets" not in data[guild_id]:
+            data[guild_id]["open_tickets"] = []
+        data[guild_id]["open_tickets"].append(channel.id)
+        save_config(data)
         
         close_view = CloseTicketView()
         embed = discord.Embed(
@@ -87,6 +94,12 @@ class CloseTicketView(discord.ui.View):
         
         await self.log_ticket_action(interaction.guild, f"Ticket closed by {interaction.user.mention} ({interaction.user.id}) - {interaction.channel.mention}")
         
+        data = load_config()
+        guild_id = str(interaction.guild.id)
+        if "open_tickets" in data[guild_id] and interaction.channel.id in data[guild_id]["open_tickets"]:
+            data[guild_id]["open_tickets"].remove(interaction.channel.id)
+            save_config(data)
+
         await asyncio.sleep(10)
         await interaction.channel.delete()
 
@@ -145,6 +158,13 @@ class CloseReasonModal(discord.ui.Modal, title="Close Ticket"):
         
         await self.log_ticket_action(interaction.guild, f"Ticket closed by {interaction.user.mention} ({interaction.user.id}) - {interaction.channel.mention}\n**Reason:** {self.reason.value}")
         
+        data = load_config()
+        guild_id = str(interaction.guild.id)
+        if "open_tickets" in data.get(guild_id, {}):
+            if interaction.channel.id in data[guild_id]["open_tickets"]:
+                data[guild_id]["open_tickets"].remove(interaction.channel.id)
+                save_config(data)
+
         await asyncio.sleep(10)
         await interaction.channel.delete()
 
@@ -210,22 +230,34 @@ class Ticket(commands.Cog):
         await self.bot.wait_until_ready()
         data = load_config()
         for guild_id, cfg in data.items():
-            channel_id = cfg.get("ticket_panel")
             guild = self.bot.get_guild(int(guild_id))
-            if guild and channel_id:
+            if not guild:
+                continue
+
+            channel_id = cfg.get("ticket_panel")
+            if channel_id:
                 channel = guild.get_channel(channel_id)
                 if channel:
+                    await channel.purge(limit=100)
+                    embed = discord.Embed(
+                        title="Ticket System",
+                        description="Click the button below to open a ticket.",
+                        color=discord.Color.blue()
+                    )
+                    await channel.send(embed=embed, view=TicketPanel())
+
+            open_tickets = cfg.get("open_tickets", [])
+            for ticket_id in open_tickets:
+                ticket_channel = guild.get_channel(ticket_id)
+                if ticket_channel:
                     try:
-                        await channel.purge(limit=100)
-                        embed = discord.Embed(
-                            title="Ticket System",
-                            description="Click the button below to open a ticket.",
-                            color=discord.Color.blue()
-                        )
-                        await channel.send(embed=embed, view=TicketPanel())
-                        print(f"[Ticket] Panel restored in {guild.name} -> {channel.name}")
+                        async for msg in ticket_channel.history(limit=50):
+                            if msg.author == self.bot.user and msg.embeds:
+                                await msg.edit(view=CloseTicketView())
+                                break
                     except Exception as e:
-                        print(f"[Ticket] Error restoring panel in {guild_id}: {e}")
+                        print(f"[Ticket] Falha ao restaurar ticket {ticket_id}: {e}")
+
 
 async def setup(bot):
     await bot.add_cog(Ticket(bot))

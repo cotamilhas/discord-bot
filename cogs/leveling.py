@@ -81,6 +81,7 @@ class Leveling(commands.Cog):
 
     @app_commands.command(name="level", description="Shows the level and XP of a user.")
     @app_commands.describe(member="The user whose level you want to see.")
+    @app_commands.guild_only()
     async def level(self, interaction: discord.Interaction, member: discord.Member = None):
         if member is None:
             member = interaction.user
@@ -100,6 +101,7 @@ class Leveling(commands.Cog):
             await interaction.response.send_message(f"{member.mention} has no levels recorded yet.")
 
     @app_commands.command(name="leaderboard", description="Shows the ranking of users with the most levels.")
+    @app_commands.guild_only()
     async def leaderboard(self, interaction: discord.Interaction):
         guild_id = str(interaction.guild.id)
 
