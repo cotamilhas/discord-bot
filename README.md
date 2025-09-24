@@ -12,7 +12,7 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - [x] **Fun Interactions**: Provide entertainment for server members with interactive commands.
 - [x] **Music**: Play music in voice channels with commands to queue, skip, pause.
 - [x] **Alerts System**: Get notified about Twitch/YouTube streams, server updates, or other custom alerts.
-- [ ] **Ticket System**: Create private support channels for members with one click.
+- [x] **Ticket System**: Create private support channels for members with one click.
 
 ## Requirements
 
