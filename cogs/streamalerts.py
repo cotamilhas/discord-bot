@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 import json
 import os
-from config import ALERTS, ALERTS_FILE, EMBED_COLOR
+from config import ALERTS, ALERTS_FILE
 
 class StreamAlerts(commands.Cog):
     def __init__(self, bot):
@@ -81,21 +81,21 @@ class StreamAlerts(commands.Cog):
                         return await response.text()
                     elif response.status == 429:
                         wait_time = int(response.headers.get('Retry-After', 60))
-                        print(f"Rate limited. Waiting {wait_time} seconds...")
+                        print(f"[STREAMALERTS] Rate limited. Waiting {wait_time} seconds...")
                         await asyncio.sleep(wait_time)
                         continue
                     else:
-                        print(f"Request failed with status {response.status}")
+                        print(f"[STREAMALERTS] Request failed with status {response.status}")
                         await asyncio.sleep(5)
             except (aiohttp.ClientConnectionError, aiohttp.ServerDisconnectedError, 
                    aiohttp.ClientResponseError, asyncio.TimeoutError) as e:
-                print(f"Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                print(f"[STREAMALERTS] Connection error (attempt {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
                     raise
             except Exception as e:
-                print(f"Unexpected error in request: {e}")
+                print(f"[STREAMALERTS] Unexpected error in request: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
@@ -127,9 +127,9 @@ class StreamAlerts(commands.Cog):
                 }
             }
         except ET.ParseError as e:
-            print(f"[YouTube] XML parse error for channel {channel_id}: {e}")
+            print(f"[STREAMALERTS][YouTube] XML parse error for channel {channel_id}: {e}")
         except Exception as e:
-            print(f"[YouTube] Unexpected error for channel {channel_id}: {e}")
+            print(f"[STREAMALERTS][YouTube] Unexpected error for channel {channel_id}: {e}")
 
         return None
 
@@ -209,10 +209,10 @@ class StreamAlerts(commands.Cog):
 
                                 await channel.send(embed=embed)
                     except Exception as e:
-                        print(f"Error checking YouTube channel {yt_channel}: {e}")
+                        print(f"[STREAMALERTS] Error checking YouTube channel {yt_channel}: {e}")
                         continue
         except Exception as e:
-            print(f"Critical error in youtube_check: {e}")
+            print(f"[STREAMALERTS] Critical error in youtube_check: {e}")
             await asyncio.sleep(60)
             self.youtube_check.restart()
 
@@ -264,10 +264,10 @@ class StreamAlerts(commands.Cog):
                             self.twitch_online_status[stream_key] = False
                             
                     except Exception as e:
-                        print(f"Error checking Twitch channel {twitch_channel}: {e}")
+                        print(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel}: {e}")
                         continue
         except Exception as e:
-            print(f"Critical error in twitch_check: {e}")
+            print(f"[STREAMALERTS] Critical error in twitch_check: {e}")
             await asyncio.sleep(60)
             self.twitch_check.restart()
 
@@ -289,8 +289,11 @@ class StreamAlerts(commands.Cog):
     alerts = app_commands.Group(name="alerts", description="Manage stream alerts")
 
     @alerts.command(name="channel", description="Set the channel for stream alerts")
-    @app_commands.guild_only()
     async def alerts_channel(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
+        if interaction.guild is None:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
         guild_id = str(interaction.guild.id)
 
         if channel is None:
@@ -306,16 +309,19 @@ class StreamAlerts(commands.Cog):
 
     @alerts.command(name="youtube", description="Add or remove a YouTube channel")
     @app_commands.describe(action="Choose add or remove", channel_id="YouTube channel ID")
-    @app_commands.guild_only()
     @app_commands.choices(action=[
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
     ])
     async def alerts_youtube(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_id: str):
+        if interaction.guild is None:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
         guild_id = str(interaction.guild.id)
 
         if guild_id not in self.active_alerts:
-            await interaction.response.send_message("Set an alert channel first with `/alerts channel`")
+            await interaction.response.send_message("Set an alert channel first with `/alerts channel`", ephemeral=True)
             return
 
         config = self.active_alerts[guild_id]
@@ -324,30 +330,33 @@ class StreamAlerts(commands.Cog):
             if channel_id not in config["youtube"]:
                 config["youtube"].append(channel_id)
                 self.save_alerts()
-                await interaction.response.send_message(f"YouTube alert added for **{channel_id}**")
+                await interaction.response.send_message(f"YouTube alert added for **{channel_id}**", ephemeral=True)
             else:
-                await interaction.response.send_message("This channel is already in the list.")
+                await interaction.response.send_message("This channel is already in the list.", ephemeral=True)
 
         elif action.value == "remove":
             if channel_id in config["youtube"]:
                 config["youtube"].remove(channel_id)
                 self.save_alerts()
-                await interaction.response.send_message(f"YouTube alert removed for **{channel_id}**")
+                await interaction.response.send_message(f"YouTube alert removed for **{channel_id}**", ephemeral=True)
             else:
-                await interaction.response.send_message("This channel is not in the list.")
+                await interaction.response.send_message("This channel is not in the list.", ephemeral=True)
 
     @alerts.command(name="twitch", description="Add or remove a Twitch channel")
     @app_commands.describe(action="Choose add or remove", channel_name="Twitch channel name")
-    @app_commands.guild_only()
     @app_commands.choices(action=[
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
     ])
     async def alerts_twitch(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_name: str):
+        if interaction.guild is None:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
         guild_id = str(interaction.guild.id)
 
         if guild_id not in self.active_alerts:
-            await interaction.response.send_message("Set an alert channel first with `/alerts channel`")
+            await interaction.response.send_message("Set an alert channel first with `/alerts channel`", ephemeral=True)
             return
 
         config = self.active_alerts[guild_id]
@@ -356,22 +365,25 @@ class StreamAlerts(commands.Cog):
             if channel_name.lower() not in [c.lower() for c in config["twitch"]]:
                 config["twitch"].append(channel_name)
                 self.save_alerts()
-                await interaction.response.send_message(f"Twitch alert added for **{channel_name}**")
+                await interaction.response.send_message(f"Twitch alert added for **{channel_name}**", ephemeral=True)
             else:
-                await interaction.response.send_message("This channel is already in the list.")
+                await interaction.response.send_message("This channel is already in the list.", ephemeral=True)
 
         elif action.value == "remove":
             for channel in config["twitch"]:
                 if channel.lower() == channel_name.lower():
                     config["twitch"].remove(channel)
                     self.save_alerts()
-                    await interaction.response.send_message(f"Twitch alert removed for **{channel}**")
+                    await interaction.response.send_message(f"Twitch alert removed for **{channel}**", ephemeral=True)
                     return
-            await interaction.response.send_message("This channel is not in the list.")
+            await interaction.response.send_message("This channel is not in the list.", ephemeral=True)
 
     @alerts.command(name="list", description="List all configured alerts")
-    @app_commands.guild_only()
     async def alerts_list(self, interaction: discord.Interaction):
+        if interaction.guild is None:
+            await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
+            return
+        
         guild_id = str(interaction.guild.id)
 
         if guild_id not in self.active_alerts or (

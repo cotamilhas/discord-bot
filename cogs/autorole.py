@@ -2,9 +2,10 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import json
-from colorama import Fore, init
+from colorama import Fore, Style, init
 from config import SERVER_OPTIONS
 from typing import Optional
+
 init(autoreset=True)
 
 class AutoRole(commands.Cog):
@@ -44,73 +45,87 @@ class AutoRole(commands.Cog):
                 data[guild_id]["server_name"] = after.name
                 self.save_config(data)
 
-    @app_commands.command(name="autorole", description="Set or clear the automatic role for new members. (Admin only)")
-    @app_commands.choices(mode=[
-        app_commands.Choice(name="Set Role", value="setRole"),
-        app_commands.Choice(name="Clear Role", value="clearRole")
-    ])
-    @app_commands.describe(
-        role="The role to automatically assign (only needed when using 'Set')"
-    )
-    @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.guild_only()
-    async def autorole(
-        self,
-        interaction: discord.Interaction,
-        mode: app_commands.Choice[str],
-        role: Optional[discord.Role] = None
-    ):
-        guild_id = str(interaction.guild.id)
+    @commands.command(name="autorole")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def autorole(self, ctx: commands.Context, role: Optional[discord.Role] = None):
+        guild_id = str(ctx.guild.id)
         data = self.load_config()
 
-        if mode.value == "setRole":
-            if role is None:
-                await interaction.response.send_message("You must specify a role when setting autorole.", ephemeral=True)
-                return
-
+        if role and isinstance(role, discord.Role):
             if role.name == "@everyone":
-                await interaction.response.send_message("You cannot set @everyone as the automatic role.", ephemeral=True)
+                await ctx.send("You cannot set @everyone as the automatic role.")
                 return
 
             self.update_guild_config(guild_id, "autorole", role.id)
-            self.update_guild_config(guild_id, "server_name", interaction.guild.name)
+            self.update_guild_config(guild_id, "server_name", ctx.guild.name)
 
-            await interaction.response.send_message(f"The automatic role has been set to: {role.mention}", ephemeral=True)
-            print(f"Auto role set to {Fore.CYAN}{role.name} in server {Fore.CYAN}{interaction.guild.name}.")
+            await ctx.send(f"The automatic role has been set to: {role.mention}")
+            print(
+                f"[AUTOROLE]: Role {Fore.CYAN}{role.name}{Style.RESET_ALL} "
+                f"set as automatic in server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+            )
 
-        elif mode.value == "clearRole":
+        elif role is None or (isinstance(role, str) and role.lower() == "clear"):
             if guild_id in data and "autorole" in data[guild_id]:
                 del data[guild_id]["autorole"]
                 self.save_config(data)
-                await interaction.response.send_message("The automatic role has been removed from this server.")
-                print(f"Auto role removed for server {Fore.CYAN}{interaction.guild.name}.")
+                await ctx.send("The automatic role has been removed from this server.", ephemeral=True)
+                print(
+                    f"[AUTOROLE]: Automatic role removed in server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                    f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+                )
             else:
-                await interaction.response.send_message("No automatic role has been configured for this server.", ephemeral=True)
-                print(f"No auto role configured for server {Fore.CYAN}{interaction.guild.name}.")     
+                await ctx.send("No automatic role has been configured for this server.", ephemeral=True)
+                print(
+                    f"[AUTOROLE][INFO]: No automatic role configured for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                    f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+                )
+        else:
+            await ctx.send("Invalid usage. Examples:\n"
+                           "`!autorole @Role`\n"
+                           "`!autorole clear`")
             
     @commands.Cog.listener()
     async def on_member_join(self, member):
         guild_id = str(member.guild.id)
         guild_config = self.get_guild_config(guild_id)
         role_id = guild_config.get("autorole")
+
         if role_id:
             role = discord.utils.get(member.guild.roles, id=role_id)
             if role is not None:
                 try:
-                    print(f"Role {Fore.CYAN}{role.name} automatically assigned to "
-                          f"{Fore.CYAN}{member.display_name} "
-                          f"in server {Fore.CYAN}{member.guild.name}.")
+                    print(
+                        f"[AUTOROLE] Role {Fore.CYAN}{role.name}{Style.RESET_ALL} "
+                        f"automatically assigned to {Fore.GREEN}{member.display_name}{Style.RESET_ALL} "
+                        f"in server {Fore.MAGENTA}{member.guild.name}{Style.RESET_ALL} "
+                        f"(ID: {Fore.YELLOW}{member.guild.id}{Style.RESET_ALL})"
+                    )
                     await member.add_roles(role)
                 except discord.Forbidden:
-                    print(f"Insufficient permissions to assign the role {Fore.CYAN}'{role.name}' "
-                          f"in server {Fore.CYAN}{member.guild.name}.")
+                    print(
+                        f"[AUTOROLE][ERROR] Insufficient permissions to assign role "
+                        f"{Fore.CYAN}{role.name}{Style.RESET_ALL} "
+                        f"in server {Fore.MAGENTA}{member.guild.name}{Style.RESET_ALL} "
+                        f"(ID: {Fore.YELLOW}{member.guild.id}{Style.RESET_ALL})"
+                    )
                 except discord.HTTPException as e:
-                    print(f"Error assigning the role: {Fore.CYAN}{e}")
+                    print(
+                        f"[AUTOROLE][ERROR] Error assigning role {Fore.CYAN}{role.name}{Style.RESET_ALL} "
+                        f"to {Fore.GREEN}{member.display_name}{Style.RESET_ALL}: {Fore.RED}{e}{Style.RESET_ALL}"
+                    )
             else:
-                print(f"The role with ID {Fore.CYAN}'{role_id}' configured for server "
-                      f"{Fore.CYAN}{member.guild.name} was not found.")
+                print(
+                    f"[AUTOROLE][WARNING]: Role with ID {Fore.YELLOW}{role_id}{Style.RESET_ALL} "
+                    f"configured for server {Fore.MAGENTA}{member.guild.name}{Style.RESET_ALL} was not found."
+                )
         else:
-            print(f"No automatic role configured for server {Fore.CYAN}'{member.guild.name}'.")
+            print(
+                f"[AUTOROLE][INFO]: No automatic role configured for server {Fore.MAGENTA}{member.guild.name}{Style.RESET_ALL} "
+                f"(ID: {Fore.YELLOW}{member.guild.id}{Style.RESET_ALL})"
+            )
 
 
 async def setup(bot):

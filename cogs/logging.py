@@ -656,42 +656,38 @@ class ServerLogs(commands.Cog):
         
         await self.send_embed(channel.guild, embed)
 
-    # Log Channel Setup
-    @app_commands.command(name="logchannel", description="Set or clear the log channel for this server. (Admin only)")
-    @app_commands.choices(mode=[
-        app_commands.Choice(name="set", value="set"),
-        app_commands.Choice(name="clear", value="clear")
-    ])
-    @app_commands.describe(channel="The channel where logs will be sent (only needed for 'set')")
-    @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.guild_only()
-    async def logchannel(
-        self,
-        interaction: discord.Interaction,
-        mode: app_commands.Choice[str],
-        channel: Optional[discord.TextChannel] = None
-    ):
-        guild_id = str(interaction.guild.id)
+    @commands.command(name="logchannel")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def logchannel(self, ctx: commands.Context, action: Optional[str] = None):
+        guild_id = str(ctx.guild.id)
         data = self.load_config()
 
-        if mode.value == "set":
-            if channel is None:
-                await interaction.response.send_message("You must specify a channel when using 'set'.", ephemeral=True)
-                return
-            
-            self.update_guild_config(guild_id, "log_channel", int(channel.id))
-            self.update_guild_config(guild_id, "server_name", interaction.guild.name)
-            print(f"Log channel set to {Fore.BLUE}{channel.mention}{Style.RESET_ALL} for guild {Fore.BLUE}{interaction.guild.name}{Style.RESET_ALL}")
-            await interaction.response.send_message(f"Log channel set to {channel.mention}.", ephemeral=True)
-
-        elif mode.value == "clear":
+        if action and action.lower() == "clear":
             if guild_id in data and "log_channel" in data[guild_id]:
                 del data[guild_id]["log_channel"]
                 self.save_config(data)
-                print(f"Log channel removed for guild {Fore.BLUE}{interaction.guild.name}{Style.RESET_ALL}")
-                await interaction.response.send_message("Log channel removed.", ephemeral=True)
+                await ctx.send("Log channel removed.")
+                print(
+                    f"[LOGCHANNEL]: Log channel removed for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                    f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+                )
             else:
-                await interaction.response.send_message("No log channel has been configured for this server.", ephemeral=True)
+                await ctx.send("No log channel has been configured for this server.", ephemeral=True)
+                print(
+                    f"[LOGCHANNEL]: No log channel configured for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                    f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+                )
+        else:
+            channel = ctx.channel
+            self.update_guild_config(guild_id, "log_channel", channel.id)
+            self.update_guild_config(guild_id, "server_name", ctx.guild.name)
+            await ctx.send(f"Log channel set to {channel.mention}.", ephemeral=True)
+            print(
+                f"[LOGCHANNEL]: Log channel set to {Fore.BLUE}{channel.name}{Style.RESET_ALL} "
+                f"for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
+                f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
+            )
 
 
 async def setup(bot):

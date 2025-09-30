@@ -8,7 +8,9 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import asyncio
 import re
 import traceback
-from config import EMBED_COLOR, YTDL_SEARCH_OPTS, YTDL_DIRECT_OPTS, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, USE_SPOTIFY_API, NEXT_COLOR, BACK_COLOR
+from config import EMBED_COLOR, YTDL_SEARCH_OPTS, YTDL_DIRECT_OPTS 
+from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, USE_SPOTIFY_API
+from config import NEXT_COLOR, BACK_COLOR, COOKIES_FILE, DEBUG_MODE
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
     client_id=SPOTIFY_CLIENT_ID,
@@ -90,39 +92,40 @@ class Music(commands.Cog):
 
     async def extract_spotify_titles(self, url):
         if not sp: 
-            print("[WARNING] Spotify API not initialized")
+            print("[MUSIC][WARNING] Spotify API not initialized")
             return []
         
         try:
-            print(f"[DEBUG] Processing Spotify URL: {url}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] Processing Spotify URL: {url}")
             
             if "track/" in url:
                 url_parts = url.split("track/")
                 if len(url_parts) < 2:
-                    print(f"[ERROR] Invalid track URL format: {url}")
+                    print(f"[MUSIC][ERROR] Invalid track URL format: {url}")
                     return []
                     
                 track_id_part = url_parts[1].split("?")[0]
                 if not track_id_part:
-                    print(f"[ERROR] Could not extract track ID from: {url}")
+                    print(f"[MUSIC][ERROR] Could not extract track ID from: {url}")
                     return []
                 
                 track = sp.track(track_id_part)
                 if track and track.get('name') and track.get('artists'):
                     return [f"{track['name']} {track['artists'][0]['name']}"]
                 else:
-                    print(f"[ERROR] Invalid track data received from Spotify")
+                    print(f"[MUSIC][ERROR] Invalid track data received from Spotify")
                     return []
                     
             elif "playlist/" in url:
                 url_parts = url.split("playlist/")
                 if len(url_parts) < 2:
-                    print(f"[ERROR] Invalid playlist URL format: {url}")
+                    print(f"[MUSIC][ERROR] Invalid playlist URL format: {url}")
                     return []
                     
                 playlist_id = url_parts[1].split("?")[0]
                 if not playlist_id:
-                    print(f"[ERROR] Could not extract playlist ID from: {url}")
+                    print(f"[MUSIC][ERROR] Could not extract playlist ID from: {url}")
                     return []
                 
                 results = sp.playlist_tracks(playlist_id)
@@ -147,19 +150,19 @@ class Music(commands.Cog):
             elif "album/" in url:
                 url_parts = url.split("album/")
                 if len(url_parts) < 2:
-                    print(f"[ERROR] Invalid album URL format: {url}")
+                    print(f"[MUSIC][ERROR] Invalid album URL format: {url}")
                     return []
                     
                 album_id = url_parts[1].split("?")[0]
                 if not album_id:
-                    print(f"[ERROR] Could not extract album ID from: {url}")
+                    print(f"[MUSIC][ERROR] Could not extract album ID from: {url}")
                     return []
                 
                 results = sp.album_tracks(album_id)
                 album = sp.album(album_id)
                 
                 if not album or not album.get('name'):
-                    print(f"[ERROR] Could not get album info")
+                    print(f"[MUSIC][ERROR] Could not get album info")
                     return []
                 
                 album_name = album['name']
@@ -176,7 +179,7 @@ class Music(commands.Cog):
                             if track and track.get('name') and track.get('artists'):
                                 titles.append(f"{track['name']} {track['artists'][0]['name']} {album_name}")
                     except Exception as e:
-                        print(f"[ERROR] Error processing album pagination: {e}")
+                        print(f"[MUSIC][ERROR] Error processing album pagination: {e}")
                         break
                 
                 return titles
@@ -184,17 +187,17 @@ class Music(commands.Cog):
             elif "artist/" in url:
                 url_parts = url.split("artist/")
                 if len(url_parts) < 2:
-                    print(f"[ERROR] Invalid artist URL format: {url}")
+                    print(f"[MUSIC][ERROR] Invalid artist URL format: {url}")
                     return []
                     
                 artist_id = url_parts[1].split("?")[0]
                 if not artist_id:
-                    print(f"[ERROR] Could not extract artist ID from: {url}")
+                    print(f"[MUSIC][ERROR] Could not extract artist ID from: {url}")
                     return []
                 
                 artist = sp.artist(artist_id)
                 if not artist or not artist.get('name'):
-                    print(f"[ERROR] Could not get artist info")
+                    print(f"[MUSIC][ERROR] Could not get artist info")
                     return []
                 
                 top_tracks_data = sp.artist_top_tracks(artist_id, country='PT')
@@ -209,14 +212,15 @@ class Music(commands.Cog):
                 return titles
                 
         except Exception as e:
-            print(f"[ERROR] Spotify extraction error: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] Spotify extraction error: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
         
         return []
 
     async def ensure_voice(self, ctx):
         try:
-            print(f"[DEBUG] ensure_voice called for user: {ctx.author}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] ensure_voice called for user: {ctx.author}")
 
             if not ctx.author.voice or not ctx.author.voice.channel:
                 await ctx.send(
@@ -226,33 +230,45 @@ class Music(commands.Cog):
                 return None
 
             voice_channel = ctx.author.voice.channel
-            print(f"[DEBUG] User is in voice channel: {voice_channel.name}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] User is in voice channel: {voice_channel.name}")
 
             vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
-            print(f"[DEBUG] Current voice client: {vc}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] Current voice client: {vc}")
 
             if not vc:
-                print(f"[DEBUG] Connecting to {voice_channel.name}")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][DEBUG] Connecting to {voice_channel.name}")
                 vc = await voice_channel.connect()
-                print(f"[INFO] Connected to {voice_channel.name}")
+                print(f"[MUSIC][INFO] Connected to {voice_channel.name}")
             elif vc.channel != voice_channel:
-                print(f"[DEBUG] Moving from {vc.channel.name} to {voice_channel.name}")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][DEBUG] Moving from {vc.channel.name} to {voice_channel.name}")
                 await vc.move_to(voice_channel)
-                print(f"[INFO] Moved to {voice_channel.name}")
+                print(f"[MUSIC][INFO] Moved to {voice_channel.name}")
 
             return vc
 
         except Exception as e:
-            print(f"[ERROR] ensure_voice: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] ensure_voice: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
             await ctx.send(embed=Embed(description=f"Error connecting to voice: {str(e)}", color=EMBED_COLOR))
             return None
 
     async def yt_search(self, query):
         try:
-            print(f"[DEBUG] YouTube search for: {query}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] YouTube search for: {query}")
             is_url = re.match(r'(https?://)?(www\.)?(youtube\.com|youtu\.be)/.+', query)
             opts = YTDL_SEARCH_OPTS.copy()
+            if COOKIES_FILE:
+                opts['cookiefile'] = COOKIES_FILE
+                if DEBUG_MODE:
+                    print(f"[MUSIC][DEBUG] Using cookies file: {COOKIES_FILE}")
+            else:
+                opts.pop('cookiefile', None)
+                print("[MUSIC][WARNING] No cookies file found, proceeding without it")
             if is_url: 
                 opts.pop('default_search', None)
                 
@@ -269,21 +285,30 @@ class Music(commands.Cog):
                             "thumbnail": e.get("thumbnail")
                         })
                 
-                print(f"[DEBUG] Found {len(results)} YouTube results")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][DEBUG] Found {len(results)} YouTube results")
                 return results
                 
         except Exception as e:
-            print(f"[ERROR] YouTube search error: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] YouTube search error: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
             return []
 
     def create_source(self, url):
         try:
-            print(f"[DEBUG] Creating audio source for: {url}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] Creating audio source for: {url}")
             with yt_dlp.YoutubeDL(YTDL_DIRECT_OPTS) as ytdl:
+                if COOKIES_FILE:
+                    ytdl.params['cookiefile'] = COOKIES_FILE
+                    if DEBUG_MODE:
+                        print(f"[MUSIC][DEBUG] Using cookies file: {COOKIES_FILE}")
+                else:
+                    ytdl.params.pop('cookiefile', None)
+                    print("[MUSIC][WARNING] No cookies file found, proceeding without it")
                 info = ytdl.extract_info(url, download=False)
                 if not info or not info.get('url'):
-                    print(f"[ERROR] Could not extract stream URL")
+                    print(f"[MUSIC][ERROR] Could not extract stream URL")
                     return None
                 return discord.FFmpegPCMAudio(
                     info['url'],
@@ -291,38 +316,50 @@ class Music(commands.Cog):
                     options='-vn -f s16le'
                 )
         except Exception as e:
-            print(f"[ERROR] create_source: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] create_source: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
             return None
 
     async def play_next(self, interaction, vc):
         try:
             queue = self.queues.get(interaction.guild.id, [])
             if not queue:
-                print("[DEBUG] Queue is empty, disconnecting")
+                if DEBUG_MODE:
+                    print("[MUSIC][DEBUG] Queue is empty, disconnecting")
                 self.playing_now[interaction.guild.id] = None
+                await self.bot.change_presence(activity=None)
                 if vc.is_connected():
                     await vc.disconnect()
-                return
-                
-            if len(queue) == 0:
-                print("[DEBUG] Queue length is 0")
                 return
                 
             title, url, thumbnail = queue.pop(0)
             self.queues[interaction.guild.id] = queue
             self.playing_now[interaction.guild.id] = (title, url)
             
-            print(f"[DEBUG] Playing next song: {title}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] Playing next song: {title}")
             
             source = self.create_source(url)
             if not source:
-                print(f"[ERROR] Could not create audio source, skipping")
+                print(f"[MUSIC][ERROR] Could not create audio source, skipping")
                 await self.play_next(interaction, vc)
                 return
-                
-            vc.play(source, after=lambda e: self.bot.loop.create_task(self.play_next(interaction, vc)) if not e else print(f"[ERROR] Playback error: {e}"))
             
+            vc.play(source, after=lambda e: self.bot.loop.create_task(self.play_next(interaction, vc)) if not e else print(f"[ERROR] Playback error: {e}"))
+
+            if " - " in title:
+                artist, song = title.split(" - ", 1)
+                activity_name = f"{artist} – {song}"
+            else:
+                activity_name = title
+
+            activity = discord.Activity(
+                type=discord.ActivityType.listening,
+                name=activity_name
+            )
+            
+            await self.bot.change_presence(activity=activity)
+
             embed = Embed(title="Now Playing", description=f"[{title}]({url})", color=EMBED_COLOR)
             if thumbnail: 
                 embed.set_thumbnail(url=thumbnail)
@@ -331,30 +368,35 @@ class Music(commands.Cog):
             await interaction.channel.send(embed=embed)
             
         except Exception as e:
-            print(f"[ERROR] play_next: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] play_next: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
 
     @commands.command(name='play', aliases=["p"], help='Plays a song from YouTube or Spotify')
+    @commands.guild_only()
     async def play(self, ctx, *, query: str):
         try:
-            print(f"[DEBUG] Play command called with query: {query}")
+            if DEBUG_MODE:
+                print(f"[MUSIC][DEBUG] Play command called with query: {query}")
             
             vc = await self.ensure_voice(ctx)
-            if not vc: 
-                print("[DEBUG] Could not ensure voice connection")
+            if not vc:
+                if DEBUG_MODE: 
+                    print("[MUSIC][DEBUG] Could not ensure voice connection")
                 return
 
             queue = self.queues.setdefault(ctx.guild.id, [])
             
             if self.is_spotify_url(query):
-                print("[DEBUG] Processing Spotify URL")
+                if DEBUG_MODE:
+                    print("[MUSIC][DEBUG] Processing Spotify URL")
                 await ctx.send("Processing the Spotify link. It may take a few seconds to add all the songs to the queue.")
                 titles = await self.extract_spotify_titles(query)
                 if not titles:
-                    await ctx.send("Could not process Spotify link.")
+                    await ctx.send("[MUSIC] Could not process Spotify link.")
                     return
                     
-                print(f"[DEBUG] Extracted {len(titles)} titles from Spotify")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][DEBUG] Extracted {len(titles)} titles from Spotify")
                 
                 for i, title in enumerate(titles):
                     results = await self.yt_search(title)
@@ -366,7 +408,8 @@ class Music(commands.Cog):
                     await asyncio.sleep(0.5)
                     
             else:
-                print("[DEBUG] Processing YouTube search/URL")
+                if DEBUG_MODE:
+                    print("[MUSIC][DEBUG] Processing YouTube search/URL")
                 entries = await self.yt_search(query)
                 if not entries:
                     await ctx.send(embed=Embed(description="No results found.", color=EMBED_COLOR))
@@ -391,11 +434,12 @@ class Music(commands.Cog):
                 await ctx.message.add_reaction("👍")
                     
         except Exception as e:
-            print(f"[ERROR] play command: {e}")
-            print(f"[ERROR] Traceback: {traceback.format_exc()}")
+            print(f"[MUSIC][ERROR] play command: {e}")
+            print(f"[MUSIC][ERROR] Traceback: {traceback.format_exc()}")
             await ctx.send(f"Error: {str(e)}")
 
     @commands.command(name='skip', aliases=["s", "next", "n"], help='Skips the current song')
+    @commands.guild_only()
     async def skip(self, ctx):
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
         if vc and vc.is_playing():
@@ -407,6 +451,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='stop', aliases=["disconnect", "leave", "l", "d"], help='Stops the music and disconnects from the voice channel')
+    @commands.guild_only()
     async def disconnect(self, ctx):
         guild_id = ctx.guild.id
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
@@ -423,6 +468,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='pause', aliases=["ps"], help='Pauses the current song')
+    @commands.guild_only()
     async def pause(self, ctx):
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
         if vc and vc.is_playing():
@@ -434,6 +480,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='resume', aliases=["r"], help='Resumes the paused song')
+    @commands.guild_only()
     async def resume(self, ctx):
         vc = discord.utils.get(self.bot.voice_clients, guild=ctx.guild)
         if vc and vc.is_paused():
@@ -445,6 +492,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='queue', aliases=["q"], help='Shows the current music queue')
+    @commands.guild_only()
     async def queue(self, ctx):
         queue = self.queues.get(ctx.guild.id, [])
         view = QueueView([{"title": t} for t, _, _ in queue])
@@ -454,6 +502,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='nowplaying', aliases=["np"], help='Shows the currently playing song')
+    @commands.guild_only()
     async def nowplaying(self, ctx):
         song = self.playing_now.get(ctx.guild.id)
         if song:
@@ -466,6 +515,7 @@ class Music(commands.Cog):
         await ctx.message.add_reaction("👍")
 
     @commands.command(name='help', aliases=["commands"], help='Shows the list of music commands')
+    @commands.guild_only()
     async def help_command(self, ctx):
         embed = Embed(title="Music Commands", color=EMBED_COLOR)
         commands_list = [

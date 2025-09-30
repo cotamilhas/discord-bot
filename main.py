@@ -4,11 +4,10 @@ from discord import app_commands
 import os
 import asyncio
 from datetime import datetime, timezone
-from colorama import Fore, init
+from colorama import Fore, Style, init
 from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR, INTENTS, DEBUG_MODE
+
 init(autoreset=True)
-
-
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=INTENTS, help_command=None)
 
 async def on_tree_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
@@ -69,7 +68,7 @@ async def load_cogs():
                     inline=False
                 )
             embed.add_field(
-                name="Details",
+                name="Slash Commands Details",
                 value=f"Type `/help <command>` for more details about a specific command.",
                 inline=False
             )
@@ -116,22 +115,31 @@ async def load_cogs():
     async def on_interaction(interaction: discord.Interaction):
         if not DEBUG_MODE:
             return
+
         if interaction.type == discord.InteractionType.application_command:
             params = ""
             if hasattr(interaction, "data") and "options" in interaction.data:
                 options = interaction.data["options"]
                 params = " | Params: " + ", ".join(
-                    f"{opt['name']}={opt.get('value', '')}" for opt in options
+                    f"{Fore.YELLOW}{opt['name']}{Style.RESET_ALL}="
+                    f"{Fore.MAGENTA}{opt.get('value', '')}{Style.RESET_ALL}"
+                    for opt in options
                 )
+
             if interaction.guild:
-                print(
-                    f"{Fore.CYAN}[COMMAND]: /{interaction.command.name}{params} | User: {interaction.user} | Server: {interaction.guild.name} (ID: {interaction.guild.id})"
+                location = (
+                    f"Server: {Fore.CYAN}{interaction.guild.name}{Style.RESET_ALL} "
+                    f"(ID: {Fore.YELLOW}{interaction.guild.id}{Style.RESET_ALL})"
                 )
             else:
-                print(
-                    f"{Fore.CYAN}[COMMAND]: /{interaction.command.name}{params} | User: {interaction.user} | (DM)"
-                )        
-                
+                location = f"{Fore.MAGENTA}(DM){Style.RESET_ALL}"
+
+            print(
+                f"[COMMAND]: {Fore.CYAN}/{interaction.command.name}{Style.RESET_ALL}{params} "
+                f"| User: {Fore.GREEN}{interaction.user}{Style.RESET_ALL} "
+                f"| {location}"
+            )
+            
 
 if __name__ == "__main__":
     async def main():

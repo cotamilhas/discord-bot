@@ -7,6 +7,7 @@ DEBUG_MODE = False  # Change this to True if you want to enable debug mode, othe
 
 # Bot token
 TOKEN = ""  # Change this to your bot token
+# https://discord.com/developers/applications
 
 # Command prefix
 COMMAND_PREFIX = "!"  # Change this to your desired command prefix, at the moment only Music Cog uses this prefix
@@ -30,6 +31,10 @@ MOVIE_NAME_PRESENCE = "Movie"  # Change this to the movie you want to show in th
 SERVER_OPTIONS = os.path.join(os.path.dirname(__file__), "stuff", "serveroptions.json")  # Change this to the path of your server options file
 LEVELS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "levels.json")  # Change this to the path of your levels file
 
+# Bot Intents
+INTENTS = discord.Intents.all()  # Change this to the intents you want to use
+
+# Alerts options
 ALERTS = False  # Change this to True if you want to enable alerts, otherwise False
 ALERTS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "alerts.json")  # Change this to the path of your alerts file
 
@@ -42,8 +47,7 @@ BACK_COLOR = ButtonStyle.red  # Change this to the color you want for your back 
 TAILS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "tails.png")  # Change this to the path of your tails image
 HEADS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "heads.png")  # Change this to the path of your heads image
 
-# Bot Intents
-INTENTS = discord.Intents.all()  # Change this to the intents you want to use
+FILTERS_FOLDER = os.path.join(os.path.dirname(__file__), "stuff", "filters")  # Change this to the path of your filters folder
 
 # YT_DLP Options
 YTDL_SEARCH_OPTS = {
@@ -58,7 +62,7 @@ YTDL_SEARCH_OPTS = {
     'source_address': '0.0.0.0',
     'noplaylist': True,
     'compat_opts': {
-        'no-youtube-unavailable-videos': True 
+        'no-youtube-unavailable-videos': True
     }
 }
 
@@ -73,6 +77,11 @@ YTDL_DIRECT_OPTS = {
         'Referer': 'https://www.youtube.com/',
     },
 }
+
+_cookie_path = os.path.join(os.path.dirname(__file__), "stuff", "cookies.txt") # Change this to the path of your cookies file
+COOKIES_FILE = _cookie_path if os.path.isfile(_cookie_path) else None # If the cookies file doesn't exist, set COOKIES_FILE to None
+# To obtain cookies, you can use a browser extension like "Get cookies.txt LOCALLY" to export cookies from your browser.
+# https://chromewebstore.google.com/detail/get-cookiestxt-locally/cclelndahbckbenkjhflpdbgdldlbecc
 
 # Spotify API Credentials - Choose WebAPI and get your credentials
 # You can get your credentials from the Spotify Developer Dashboard: https://developer.spotify.com/dashboard/create

@@ -5,7 +5,8 @@ import io
 import requests
 from colorama import Fore, init
 import sys
-from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
+from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE 
+from config import BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 init(autoreset=True)
 
 class Events(commands.Cog):
@@ -28,8 +29,11 @@ class Events(commands.Cog):
             print(f"\n{Fore.CYAN}Guilds connected to:")
             for guild in self.bot.guilds:
                 print(f"{Fore.GREEN}{guild.name} {Fore.YELLOW}({guild.id})")
+                print(f"Owner: {Fore.GREEN}{guild.owner} {Fore.YELLOW}({guild.owner.id})")
+                print(f"Members: {Fore.GREEN}{guild.member_count}\n")
+                
         else:
-            print(f"{Fore.RED}The bot is not connected to any servers.\n")
+            print(f"{Fore.RED}[EVENTS] The bot is not connected to any servers.\n")
 
         presence_array = {
             0: ("Playing", lambda: discord.Game(name=GAME_NAME_PRESENCE)),
@@ -53,12 +57,11 @@ class Events(commands.Cog):
         if activity:
             description, activity_name = activity
             await self.bot.change_presence(activity=activity_name())
-            print(f"\nBot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Fore.WHITE}: {Fore.CYAN}{description}\n")
+            print(f"Bot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Fore.WHITE}: {Fore.CYAN}{description}\n")
         else:
-            print(f"\n{Fore.RED}Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
+            print(f"[EVENTS]{Fore.RED} Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
 
         await self.bot.tree.sync()
-        print(Fore.GREEN + "Slash commands synchronized successfully!")
 
     async def createImage(self, member, text):
         avatar_url = str(member.avatar.url)
@@ -110,8 +113,13 @@ class Events(commands.Cog):
             return
         
         text = f'{member.display_name} joined the server!'
-        file = await self.createImage(member, text)
-        await channel.send(file=file)
+        try:
+            file = await self.createImage(member, text)
+            await channel.send(file=file)  
+        except Exception as e:
+            print(Fore.RED + f"[EVENTS] Error creating image: {e}")
+            await channel.send(f"{member} joined. An error occurred while creating the image.")
+            return None
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -124,7 +132,13 @@ class Events(commands.Cog):
             return
         
         text = f'{member.display_name} left the server!'
-        file = await self.createImage(member, text)
+        try:
+            file = await self.createImage(member, text)
+            await channel.send(file=file)
+        except Exception as e:
+            print(Fore.RED + f"[EVENTS] Error creating image: {e}")
+            await channel.send(f"{member} left. An error occurred while creating the image.")
+            return None
         await channel.send(file=file)
 
 

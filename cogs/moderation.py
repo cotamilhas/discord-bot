@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands
 from colorama import Fore, init
 import datetime
+from config import EMBED_COLOR
 init(autoreset=True)
 
 class UnbanView(discord.ui.View):
@@ -15,7 +16,7 @@ class UnbanView(discord.ui.View):
         self.selected_user = None
     
     def create_embed(self):
-        embed = discord.Embed(title="Banned Users List", color=0x2b2d31)
+        embed = discord.Embed(title="Banned Users List", color=EMBED_COLOR)
         
         current_page_bans = self.pages[self.current_page]
         for i, user in enumerate(current_page_bans, start=1):
@@ -60,28 +61,28 @@ class UnbanView(discord.ui.View):
             embed = discord.Embed(
                 title="Successfully Unbanned!",
                 description=f"User with ID {selected_id} has been unbanned.",
-                color=0x00ff00
+                color=EMBED_COLOR
             )
             await interaction.response.edit_message(embed=embed, view=None)
         except discord.NotFound:
             embed = discord.Embed(
                 title="Error",
                 description="User not found in the ban list.",
-                color=0xff0000
+                color=EMBED_COLOR
             )
             await interaction.response.edit_message(embed=embed, view=None)
         except discord.Forbidden:
             embed = discord.Embed(
                 title="Permission Denied",
                 description="I don't have permission to unban this user.",
-                color=0xff0000
+                color=EMBED_COLOR
             )
             await interaction.response.edit_message(embed=embed, view=None)
         except Exception as e:
             embed = discord.Embed(
                 title="Error",
                 description=f"Failed to unban: {e}",
-                color=0xff0000
+                color=EMBED_COLOR
             )
             await interaction.response.edit_message(embed=embed, view=None)
     
@@ -179,14 +180,14 @@ class Moderation(commands.Cog):
             async for ban_entry in interaction.guild.bans():
                 bans.append(ban_entry.user)
         except discord.Forbidden:
-            await interaction.followup.send("Não tenho permissão para ver a lista de bans.")
+            await interaction.followup.send("No permission to view bans list.")
             return
         except Exception as e:
-            await interaction.followup.send(f"Erro ao obter lista de bans: {e}")
+            await interaction.followup.send(f"Error fetching bans list: {e}")
             return
         
         if not bans:
-            await interaction.followup.send("Não há users banidos.")
+            await interaction.followup.send("No banned users found.")
             return
         
         view = UnbanView(bans)

@@ -208,7 +208,7 @@ class Ticket(commands.Cog):
         )
         await ctx.channel.send(embed=embed, view=TicketPanel())
 
-        await ctx.send("Ticket panel has been set up in this channel.", delete_after=5)
+        await ctx.send("Ticket panel has been set up in this channel.", ephemeral=True)
 
     async def log_ticket_action(self, guild, message):
         data = load_config()
@@ -256,7 +256,7 @@ class Ticket(commands.Cog):
                                 await msg.edit(view=CloseTicketView())
                                 break
                     except Exception as e:
-                        print(f"[Ticket] Falha ao restaurar ticket {ticket_id}: {e}")
+                        print(f"[TICKET] Error restoring ticket {ticket_id}: {e}")
 
 
 async def setup(bot):

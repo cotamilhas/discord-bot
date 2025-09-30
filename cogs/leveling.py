@@ -5,7 +5,6 @@ import json
 import os
 import random
 import asyncio
-from colorama import Fore, Style
 from config import EMBED_COLOR, LEVELS_FILE
 
 class Leveling(commands.Cog):
@@ -20,7 +19,7 @@ class Leveling(commands.Cog):
                 with open(LEVELS_FILE, 'r') as f:
                     return json.load(f)
             except json.JSONDecodeError:
-                print("The JSON file is corrupted. Creating a new one...")
+                print("[LEVELING] The JSON file is corrupted. Creating a new one...")
                 return {}
         return {}
 

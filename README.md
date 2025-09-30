@@ -1,7 +1,9 @@
 
 # Discord Bot
 
-This is a Discord bot project developed to interact with Discord servers. The bot includes multiple features to enhance server functionality and user engagement.
+This is a Discord bot project developed to interact with Discord servers. The bot includes multiple features to enhance server functionality and user engagement. 
+
+**All of this cogs are optional!** You can remove them if you want, they purpose is just to give an example what you can do.
 
 ## Features
 
@@ -11,7 +13,7 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - [x] **Logging System**: Track important server events with a comprehensive logging system.
 - [x] **Fun Interactions**: Provide entertainment for server members with interactive commands.
 - [x] **Music**: Play music in voice channels with commands to queue, skip, pause.
-- [x] **Alerts System**: Get notified about Twitch/YouTube streams, server updates, or other custom alerts.
+- [x] **Alerts System**: Get notified about Twitch/YouTube streams.
 - [x] **Ticket System**: Create private support channels for members with one click.
 
 ## Requirements
