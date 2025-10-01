@@ -667,13 +667,13 @@ class ServerLogs(commands.Cog):
             if guild_id in data and "log_channel" in data[guild_id]:
                 del data[guild_id]["log_channel"]
                 self.save_config(data)
-                await ctx.send("Log channel removed.")
+                await ctx.send("Log channel removed.", delete_after=5)
                 print(
                     f"[LOGCHANNEL]: Log channel removed for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
                     f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
                 )
             else:
-                await ctx.send("No log channel has been configured for this server.", ephemeral=True)
+                await ctx.send("No log channel has been configured for this server.", delete_after=5)
                 print(
                     f"[LOGCHANNEL]: No log channel configured for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
                     f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
@@ -682,7 +682,7 @@ class ServerLogs(commands.Cog):
             channel = ctx.channel
             self.update_guild_config(guild_id, "log_channel", channel.id)
             self.update_guild_config(guild_id, "server_name", ctx.guild.name)
-            await ctx.send(f"Log channel set to {channel.mention}.", ephemeral=True)
+            await ctx.send(f"Log channel set to {channel.mention}.", delete_after=5)
             print(
                 f"[LOGCHANNEL]: Log channel set to {Fore.BLUE}{channel.name}{Style.RESET_ALL} "
                 f"for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "

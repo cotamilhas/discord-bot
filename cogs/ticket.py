@@ -208,22 +208,7 @@ class Ticket(commands.Cog):
         )
         await ctx.channel.send(embed=embed, view=TicketPanel())
 
-        await ctx.send("Ticket panel has been set up in this channel.", ephemeral=True)
-
-    async def log_ticket_action(self, guild, message):
-        data = load_config()
-        guild_id = str(guild.id)
-        
-        if guild_id in data and "log_channel" in data[guild_id]:
-            log_channel_id = data[guild_id]["log_channel"]
-            log_channel = guild.get_channel(log_channel_id)
-            if log_channel:
-                embed = discord.Embed(
-                    description=message,
-                    color=discord.Color.purple(),
-                    timestamp=discord.utils.utcnow()
-                )
-                await log_channel.send(embed=embed)
+        await ctx.send("Ticket panel has been set up in this channel.", delete_after=5)
 
     @commands.Cog.listener()
     async def on_ready(self):

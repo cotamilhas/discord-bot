@@ -54,13 +54,13 @@ class AutoRole(commands.Cog):
 
         if role and isinstance(role, discord.Role):
             if role.name == "@everyone":
-                await ctx.send("You cannot set @everyone as the automatic role.")
+                await ctx.send("You cannot set @everyone as the automatic role.", delete_after=5)
                 return
 
             self.update_guild_config(guild_id, "autorole", role.id)
             self.update_guild_config(guild_id, "server_name", ctx.guild.name)
 
-            await ctx.send(f"The automatic role has been set to: {role.mention}")
+            await ctx.send(f"The automatic role has been set to: {role.mention}", delete_after=5)
             print(
                 f"[AUTOROLE]: Role {Fore.CYAN}{role.name}{Style.RESET_ALL} "
                 f"set as automatic in server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
@@ -71,13 +71,13 @@ class AutoRole(commands.Cog):
             if guild_id in data and "autorole" in data[guild_id]:
                 del data[guild_id]["autorole"]
                 self.save_config(data)
-                await ctx.send("The automatic role has been removed from this server.", ephemeral=True)
+                await ctx.send("The automatic role has been removed from this server.", delete_after=5)
                 print(
                     f"[AUTOROLE]: Automatic role removed in server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
                     f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
                 )
             else:
-                await ctx.send("No automatic role has been configured for this server.", ephemeral=True)
+                await ctx.send("No automatic role has been configured for this server.", delete_after=5)
                 print(
                     f"[AUTOROLE][INFO]: No automatic role configured for server {Fore.MAGENTA}{ctx.guild.name}{Style.RESET_ALL} "
                     f"(ID: {Fore.YELLOW}{ctx.guild.id}{Style.RESET_ALL})"
@@ -85,7 +85,7 @@ class AutoRole(commands.Cog):
         else:
             await ctx.send("Invalid usage. Examples:\n"
                            "`!autorole @Role`\n"
-                           "`!autorole clear`")
+                           "`!autorole clear`", delete_after=10)
             
     @commands.Cog.listener()
     async def on_member_join(self, member):
