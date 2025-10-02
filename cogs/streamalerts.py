@@ -7,7 +7,12 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 import json
 import os
-from config import ALERTS, ALERTS_FILE
+import logging
+import ssl
+from config import ALERTS, ALERTS_FILE, EMBED_COLOR
+
+logger = logging.getLogger("streamalerts")
+logging.basicConfig(level=logging.INFO)
 
 class StreamAlerts(commands.Cog):
     def __init__(self, bot):
@@ -81,25 +86,27 @@ class StreamAlerts(commands.Cog):
                         return await response.text()
                     elif response.status == 429:
                         wait_time = int(response.headers.get('Retry-After', 60))
-                        print(f"[STREAMALERTS] Rate limited. Waiting {wait_time} seconds...")
+                        logger.warning(f"[STREAMALERTS] Rate limited. Waiting {wait_time} seconds...")
                         await asyncio.sleep(wait_time)
                         continue
                     else:
-                        print(f"[STREAMALERTS] Request failed with status {response.status}")
+                        logger.warning(f"[STREAMALERTS] Request failed with status {response.status}")
                         await asyncio.sleep(5)
             except (aiohttp.ClientConnectionError, aiohttp.ServerDisconnectedError, 
-                   aiohttp.ClientResponseError, asyncio.TimeoutError) as e:
-                print(f"[STREAMALERTS] Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                   aiohttp.ClientResponseError, asyncio.TimeoutError, ssl.SSLError) as e:
+                logger.info(f"[STREAMALERTS] Suppressed connection error (attempt {attempt + 1}/{max_retries}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
-                    raise
+                    logger.info(f"[STREAMALERTS] Max retries reached for {url}. Suppressing exception.")
+                    return None
             except Exception as e:
-                print(f"[STREAMALERTS] Unexpected error in request: {e}")
+                logger.error(f"[STREAMALERTS] Unexpected error in request: {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
-                    raise
+                    logger.error(f"[STREAMALERTS] Max retries reached for {url}. Suppressing exception.")
+                    return None
         return None
 
     async def check_youtube_channel(self, channel_id: str):
@@ -132,6 +139,18 @@ class StreamAlerts(commands.Cog):
             print(f"[STREAMALERTS][YouTube] Unexpected error for channel {channel_id}: {e}")
 
         return None
+    
+    async def get_best_thumbnail(self, video_id: str) -> str:
+        base_url = f"https://img.youtube.com/vi/{video_id}/"
+        thumbs = ["maxresdefault.jpg", "hqdefault.jpg", "mqdefault.jpg", "default.jpg"]
+
+        async with aiohttp.ClientSession() as session:
+            for thumb in thumbs:
+                url = base_url + thumb
+                async with session.head(url) as resp:
+                    if resp.status == 200:
+                        return url
+        return None
 
     async def check_twitch_channel(self, channel_name: str):
         endpoints = [
@@ -145,8 +164,15 @@ class StreamAlerts(commands.Cog):
         try:
             results = []
             for url in endpoints:
-                result = await self.safe_request(url)
-                results.append(result.strip() if result else "Unknown")
+                try:
+                    result = await self.safe_request(url)
+                    results.append(result.strip() if result else "Unknown")
+                except (aiohttp.ClientConnectionError, ssl.SSLError) as e:
+                    logger.info(f"[STREAMALERTS] Suppressed error for {url}: {e}")
+                    results.append("Unknown")
+                except Exception as e:
+                    logger.error(f"[STREAMALERTS] Unexpected error for {url}: {e}")
+                    results.append("Unknown")
             
             uptime, title, game, viewers, avatar = results
 
@@ -163,7 +189,7 @@ class StreamAlerts(commands.Cog):
                 "avatar_url": avatar if avatar != "Unknown" else None
             }
         except Exception as e:
-            print(f"Twitch decapi error for {channel_name}: {e}")
+            logger.error(f"Twitch decapi error for {channel_name}: {e}")
             return None
 
     @tasks.loop(minutes=5)
@@ -204,7 +230,9 @@ class StreamAlerts(commands.Cog):
                                     color=discord.Color.red(),
                                     timestamp=datetime.now(timezone.utc)
                                 )
-                                embed.set_image(url=f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg")
+                                thumbnail_url = await self.get_best_thumbnail(video_id)
+                                if thumbnail_url:
+                                    embed.set_image(url=thumbnail_url)
                                 embed.set_footer(text="YouTube", icon_url="https://img.icons8.com/?size=100&id=19318&format=png")
 
                                 await channel.send(embed=embed)
@@ -247,7 +275,7 @@ class StreamAlerts(commands.Cog):
                                     title=f"{stream['channel_name']} is live now!",
                                     url=url,
                                     description=stream['title'],
-                                    color=0x9146ff,
+                                    color=discord.Color.purple(),
                                     timestamp=datetime.now(timezone.utc)
                                 )
                                 if stream['game_name'] != "":
@@ -393,11 +421,20 @@ class StreamAlerts(commands.Cog):
             return
 
         config = self.active_alerts[guild_id]
-        yt_list = "\n".join(config["youtube"]) if config["youtube"] else "None"
+        yt_list = []
+        for yt_channel_id in config["youtube"]:
+            video = await self.check_youtube_channel(yt_channel_id)
+            if video:
+                channel_title = video["snippet"]["channelTitle"]
+                yt_list.append(f"{channel_title} (`{yt_channel_id}`)")
+            else:
+                yt_list.append(f"Unknown (`{yt_channel_id}`)")
+        yt_list_str = "\n".join(yt_list) if yt_list else "None"
+
         tw_list = "\n".join(config["twitch"]) if config["twitch"] else "None"
 
-        embed = discord.Embed(title="Configured Alerts", color=0x00ffcc)
-        embed.add_field(name="YouTube", value=yt_list, inline=False)
+        embed = discord.Embed(title="Configured Alerts", color=EMBED_COLOR)
+        embed.add_field(name="YouTube", value=yt_list_str, inline=False)
         embed.add_field(name="Twitch", value=tw_list, inline=False)
 
         await interaction.response.send_message(embed=embed)
