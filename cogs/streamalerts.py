@@ -10,6 +10,7 @@ import os
 import logging
 import ssl
 from config import ALERTS, ALERTS_FILE, EMBED_COLOR
+from config import YOUTUBE_CHANNEL_LIMIT, TWITCH_CHANNEL_LIMIT
 
 logger = logging.getLogger("streamalerts")
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +46,7 @@ class StreamAlerts(commands.Cog):
                 timeout = aiohttp.ClientTimeout(total=30, sock_connect=15, sock_read=15)
                 self.session = aiohttp.ClientSession(connector=connector, timeout=timeout)
         except Exception as e:
-            print(f"Error creating session: {e}")
+            logger.error(f"Error creating session: {e}")
             await asyncio.sleep(5)
             await self.create_session()
 
@@ -54,7 +55,7 @@ class StreamAlerts(commands.Cog):
             if self.session and not self.session.closed:
                 await self.session.close()
         except Exception as e:
-            print(f"Error closing session: {e}")
+            logger.error(f"Error closing session: {e}")
 
     def load_alerts(self):
         try:
@@ -64,7 +65,7 @@ class StreamAlerts(commands.Cog):
                     self.active_alerts = data.get('alerts', {})
                     self.last_checked = data.get('last_checked', {'youtube': {}, 'twitch': {}})
         except Exception as e:
-            print(f"Error loading alerts: {e}")
+            logger.error(f"Error loading alerts: {e}")
 
     def save_alerts(self):
         try:
@@ -75,7 +76,7 @@ class StreamAlerts(commands.Cog):
             with open(ALERTS_FILE, 'w') as f:
                 json.dump(data, f, indent=2)
         except Exception as e:
-            print(f"Error saving alerts: {e}")
+            logger.error(f"Error saving alerts: {e}")
 
     async def safe_request(self, url, max_retries=3):
         for attempt in range(max_retries):
@@ -134,9 +135,9 @@ class StreamAlerts(commands.Cog):
                 }
             }
         except ET.ParseError as e:
-            print(f"[STREAMALERTS][YouTube] XML parse error for channel {channel_id}: {e}")
+            logger.error(f"[STREAMALERTS][YouTube] XML parse error for channel {channel_id}: {e}")
         except Exception as e:
-            print(f"[STREAMALERTS][YouTube] Unexpected error for channel {channel_id}: {e}")
+            logger.error(f"[STREAMALERTS][YouTube] Unexpected error for channel {channel_id}: {e}")
 
         return None
     
@@ -147,9 +148,12 @@ class StreamAlerts(commands.Cog):
         async with aiohttp.ClientSession() as session:
             for thumb in thumbs:
                 url = base_url + thumb
-                async with session.head(url) as resp:
-                    if resp.status == 200:
-                        return url
+                try:
+                    async with session.head(url) as resp:
+                        if resp.status == 200:
+                            return url
+                except Exception as e:
+                    logger.warning(f"[STREAMALERTS] Thumbnail check failed: {url} - {e}")
         return None
 
     async def check_twitch_channel(self, channel_name: str):
@@ -237,10 +241,10 @@ class StreamAlerts(commands.Cog):
 
                                 await channel.send(embed=embed)
                     except Exception as e:
-                        print(f"[STREAMALERTS] Error checking YouTube channel {yt_channel}: {e}")
+                        logger.error(f"[STREAMALERTS] Error checking YouTube channel {yt_channel}: {e}")
                         continue
         except Exception as e:
-            print(f"[STREAMALERTS] Critical error in youtube_check: {e}")
+            logger.critical(f"[STREAMALERTS] Critical error in youtube_check: {e}")
             await asyncio.sleep(60)
             self.youtube_check.restart()
 
@@ -289,13 +293,14 @@ class StreamAlerts(commands.Cog):
 
                                 await channel.send(embed=embed)
                         else:
-                            self.twitch_online_status[stream_key] = False
-                            
+                            if self.twitch_online_status.get(stream_key, False):
+                                self.twitch_online_status[stream_key] = False
+                                
                     except Exception as e:
-                        print(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel}: {e}")
+                        logger.error(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel}: {e}")
                         continue
         except Exception as e:
-            print(f"[STREAMALERTS] Critical error in twitch_check: {e}")
+            logger.critical(f"[STREAMALERTS] Critical error in twitch_check: {e}")
             await asyncio.sleep(60)
             self.twitch_check.restart()
 
@@ -312,7 +317,7 @@ class StreamAlerts(commands.Cog):
             self.save_alerts()
             asyncio.create_task(self.close_session())
         except Exception as e:
-            print(f"Error in cog_unload: {e}")
+            logger.error(f"Error in cog_unload: {e}")
 
     alerts = app_commands.Group(name="alerts", description="Manage stream alerts")
 
@@ -355,6 +360,9 @@ class StreamAlerts(commands.Cog):
         config = self.active_alerts[guild_id]
 
         if action.value == "add":
+            if len(config["youtube"]) >= YOUTUBE_CHANNEL_LIMIT:
+                await interaction.response.send_message(f"You can only have up to {YOUTUBE_CHANNEL_LIMIT} YouTube channels.", ephemeral=True)
+                return
             if channel_id not in config["youtube"]:
                 config["youtube"].append(channel_id)
                 self.save_alerts()
@@ -390,6 +398,9 @@ class StreamAlerts(commands.Cog):
         config = self.active_alerts[guild_id]
 
         if action.value == "add":
+            if len(config["twitch"]) >= TWITCH_CHANNEL_LIMIT:
+                await interaction.response.send_message(f"You can only have up to {TWITCH_CHANNEL_LIMIT} Twitch channels.", ephemeral=True)
+                return
             if channel_name.lower() not in [c.lower() for c in config["twitch"]]:
                 config["twitch"].append(channel_name)
                 self.save_alerts()

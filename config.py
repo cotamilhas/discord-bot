@@ -37,6 +37,8 @@ INTENTS = discord.Intents.all()  # Change this to the intents you want to use
 # Alerts options
 ALERTS = False  # Change this to True if you want to enable alerts, otherwise False
 ALERTS_FILE = os.path.join(os.path.dirname(__file__), "stuff", "alerts.json")  # Change this to the path of your alerts file
+YOUTUBE_CHANNEL_LIMIT = 5
+TWITCH_CHANNEL_LIMIT = 5
 
 # Embed color
 EMBED_COLOR = discord.Color.blue()  # Change this to the color you want for your embeds
