@@ -10,10 +10,11 @@ import os
 import logging
 import ssl
 from config import ALERTS, ALERTS_FILE, EMBED_COLOR
-from config import YOUTUBE_CHANNEL_LIMIT, TWITCH_CHANNEL_LIMIT
+from config import YOUTUBE_CHANNEL_LIMIT, TWITCH_CHANNEL_LIMIT, DEBUG_MODE
 
-logger = logging.getLogger("streamalerts")
-logging.basicConfig(level=logging.INFO)
+if DEBUG_MODE:
+    logger = logging.getLogger("streamalerts")
+    logging.basicConfig(level=logging.INFO)
 
 class StreamAlerts(commands.Cog):
     def __init__(self, bot):
@@ -25,17 +26,28 @@ class StreamAlerts(commands.Cog):
         self.retry_count = 0
         self.max_retries = 3
 
+        if DEBUG_MODE:
+            logger.setLevel(logging.DEBUG)
+            logging.basicConfig(level=logging.DEBUG)
+
         if not os.path.exists(ALERTS_FILE):
             os.makedirs(os.path.dirname(ALERTS_FILE), exist_ok=True)
             with open(ALERTS_FILE, "w") as f:
                 json.dump({"alerts": {}, "last_checked": {"youtube": {}, "twitch": {}}}, f, indent=2)
+            if DEBUG_MODE:
+                logger.debug(f"[DEBUG_MODE] Created new alerts file: {ALERTS_FILE}")
 
         self.load_alerts()
 
         if not ALERTS:
             print("Alerts are disabled in config.py. The alerts cog will not be loaded.")
+            if DEBUG_MODE:
+                logger.debug("[DEBUG_MODE] Alerts disabled in config, cog not loaded")
             return
 
+        if DEBUG_MODE:
+            logger.debug("[DEBUG_MODE] Starting YouTube and Twitch check tasks")
+            
         self.youtube_check.start()
         self.twitch_check.start()
 
@@ -45,6 +57,8 @@ class StreamAlerts(commands.Cog):
                 connector = aiohttp.TCPConnector(limit_per_host=10, ttl_dns_cache=300, limit=0)
                 timeout = aiohttp.ClientTimeout(total=30, sock_connect=15, sock_read=15)
                 self.session = aiohttp.ClientSession(connector=connector, timeout=timeout)
+                if DEBUG_MODE:
+                    logger.debug("[DEBUG_MODE] Created new aiohttp session")
         except Exception as e:
             logger.error(f"Error creating session: {e}")
             await asyncio.sleep(5)
@@ -54,6 +68,8 @@ class StreamAlerts(commands.Cog):
         try:
             if self.session and not self.session.closed:
                 await self.session.close()
+                if DEBUG_MODE:
+                    logger.debug("[DEBUG_MODE] Closed aiohttp session")
         except Exception as e:
             logger.error(f"Error closing session: {e}")
 
@@ -64,6 +80,9 @@ class StreamAlerts(commands.Cog):
                     data = json.load(f)
                     self.active_alerts = data.get('alerts', {})
                     self.last_checked = data.get('last_checked', {'youtube': {}, 'twitch': {}})
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Loaded alerts: {len(self.active_alerts)} guilds")
+                    logger.debug(f"[DEBUG_MODE] Last checked - YouTube: {len(self.last_checked['youtube'])}, Twitch: {len(self.last_checked['twitch'])}")
         except Exception as e:
             logger.error(f"Error loading alerts: {e}")
 
@@ -75,27 +94,40 @@ class StreamAlerts(commands.Cog):
             }
             with open(ALERTS_FILE, 'w') as f:
                 json.dump(data, f, indent=2)
+            if DEBUG_MODE:
+                logger.debug("[DEBUG_MODE] Saved alerts to file")
         except Exception as e:
             logger.error(f"Error saving alerts: {e}")
 
     async def safe_request(self, url, max_retries=3):
+        if DEBUG_MODE:
+            logger.debug(f"[DEBUG_MODE] Making request to: {url}")
+            
         for attempt in range(max_retries):
             try:
                 await self.create_session()
                 async with self.session.get(url) as response:
                     if response.status == 200:
+                        if DEBUG_MODE:
+                            logger.debug(f"[DEBUG_MODE] Request successful: {url}")
                         return await response.text()
                     elif response.status == 429:
                         wait_time = int(response.headers.get('Retry-After', 60))
                         logger.warning(f"[STREAMALERTS] Rate limited. Waiting {wait_time} seconds...")
+                        if DEBUG_MODE:
+                            logger.debug(f"[DEBUG_MODE] Rate limited, waiting {wait_time}s (attempt {attempt + 1})")
                         await asyncio.sleep(wait_time)
                         continue
                     else:
                         logger.warning(f"[STREAMALERTS] Request failed with status {response.status}")
+                        if DEBUG_MODE:
+                            logger.debug(f"[DEBUG_MODE] Request failed with status {response.status} (attempt {attempt + 1})")
                         await asyncio.sleep(5)
             except (aiohttp.ClientConnectionError, aiohttp.ServerDisconnectedError, 
                    aiohttp.ClientResponseError, asyncio.TimeoutError, ssl.SSLError) as e:
                 logger.info(f"[STREAMALERTS] Suppressed connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Connection error (attempt {attempt + 1}): {type(e).__name__}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
@@ -103,6 +135,8 @@ class StreamAlerts(commands.Cog):
                     return None
             except Exception as e:
                 logger.error(f"[STREAMALERTS] Unexpected error in request: {e}")
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Unexpected error (attempt {attempt + 1}): {e}")
                 if attempt < max_retries - 1:
                     await asyncio.sleep(2 ** attempt)
                 else:
@@ -113,19 +147,29 @@ class StreamAlerts(commands.Cog):
     async def check_youtube_channel(self, channel_id: str):
         url = f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
+        if DEBUG_MODE:
+            logger.debug(f"[DEBUG_MODE] Checking YouTube channel: {channel_id}")
+
         try:
             xml_data = await self.safe_request(url)
             if not xml_data:
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] No XML data for YouTube channel: {channel_id}")
                 return None
 
             root = ET.fromstring(xml_data)
             entry = root.find("{http://www.w3.org/2005/Atom}entry")
             if entry is None:
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] No entries found for YouTube channel: {channel_id}")
                 return None
 
             video_id = entry.find("{http://www.youtube.com/xml/schemas/2015}videoId").text
             title = entry.find("{http://www.w3.org/2005/Atom}title").text
             author = entry.find("{http://www.w3.org/2005/Atom}author").find("{http://www.w3.org/2005/Atom}name").text
+
+            if DEBUG_MODE:
+                logger.debug(f"[DEBUG_MODE] YouTube channel {channel_id}: Found video '{title}' by {author}")
 
             return {
                 "id": {"videoId": video_id},
@@ -142,6 +186,9 @@ class StreamAlerts(commands.Cog):
         return None
     
     async def get_best_thumbnail(self, video_id: str) -> str:
+        if DEBUG_MODE:
+            logger.debug(f"[DEBUG_MODE] Getting thumbnail for video: {video_id}")
+            
         base_url = f"https://img.youtube.com/vi/{video_id}/"
         thumbs = ["maxresdefault.jpg", "hqdefault.jpg", "mqdefault.jpg", "default.jpg"]
 
@@ -151,12 +198,20 @@ class StreamAlerts(commands.Cog):
                 try:
                     async with session.head(url) as resp:
                         if resp.status == 200:
+                            if DEBUG_MODE:
+                                logger.debug(f"[DEBUG_MODE] Found thumbnail: {url}")
                             return url
                 except Exception as e:
                     logger.warning(f"[STREAMALERTS] Thumbnail check failed: {url} - {e}")
+                    
+        if DEBUG_MODE:
+            logger.debug(f"[DEBUG_MODE] No thumbnail found for video: {video_id}")
         return None
 
     async def check_twitch_channel(self, channel_name: str):
+        if DEBUG_MODE:
+            logger.debug(f"[DEBUG_MODE] Checking Twitch channel: {channel_name}")
+
         endpoints = [
             f"https://decapi.me/twitch/uptime/{channel_name.lower()}",
             f"https://decapi.me/twitch/title/{channel_name.lower()}",
@@ -171,6 +226,8 @@ class StreamAlerts(commands.Cog):
                 try:
                     result = await self.safe_request(url)
                     results.append(result.strip() if result else "Unknown")
+                    if DEBUG_MODE:
+                        logger.debug(f"[DEBUG_MODE] Twitch API result for {url}: {result}")
                 except (aiohttp.ClientConnectionError, ssl.SSLError) as e:
                     logger.info(f"[STREAMALERTS] Suppressed error for {url}: {e}")
                     results.append("Unknown")
@@ -181,7 +238,12 @@ class StreamAlerts(commands.Cog):
             uptime, title, game, viewers, avatar = results
 
             if f"{channel_name} is offline" in uptime.lower() or "offline" in uptime.lower():
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Twitch channel {channel_name} is offline")
                 return None
+
+            if DEBUG_MODE:
+                logger.debug(f"[DEBUG_MODE] Twitch channel {channel_name} is online: {title}")
 
             return {
                 "id": f"{channel_name}_{datetime.now().timestamp()}",
@@ -198,26 +260,47 @@ class StreamAlerts(commands.Cog):
 
     @tasks.loop(minutes=5)
     async def youtube_check(self):
+        if DEBUG_MODE:
+            logger.debug("[DEBUG_MODE] Starting YouTube check cycle")
+            
         try:
             await self.bot.wait_until_ready()
 
             if not self.active_alerts:
+                if DEBUG_MODE:
+                    logger.debug("[DEBUG_MODE] No active alerts, skipping YouTube check")
                 return
+
+            if DEBUG_MODE:
+                logger.debug(f"[DEBUG_MODE] Checking YouTube for {len(self.active_alerts)} guilds")
 
             for guild_id, config in list(self.active_alerts.items()):
                 if not config.get('youtube'):
+                    if DEBUG_MODE:
+                        logger.debug(f"[DEBUG_MODE] Guild {guild_id}: No YouTube channels")
                     continue
 
                 channel = self.bot.get_channel(config['channel_id'])
                 if not channel:
+                    if DEBUG_MODE:
+                        logger.debug(f"[DEBUG_MODE] Guild {guild_id}: Channel not found")
                     continue
+
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Guild {guild_id}: Checking {len(config['youtube'])} YouTube channels")
 
                 for yt_channel in config['youtube']:
                     try:
+                        if DEBUG_MODE:
+                            logger.debug(f"[DEBUG_MODE] Checking YouTube channel: {yt_channel}")
+                            
                         video = await self.check_youtube_channel(yt_channel)
                         if video:
                             video_id = video['id']['videoId']
                             last_video = self.last_checked['youtube'].get(yt_channel)
+
+                            if DEBUG_MODE:
+                                logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: Last video: {last_video}, Current video: {video_id}")
 
                             if last_video != video_id:
                                 self.last_checked['youtube'][yt_channel] = video_id
@@ -226,6 +309,9 @@ class StreamAlerts(commands.Cog):
                                 title = video['snippet']['title']
                                 channel_name = video['snippet']['channelTitle']
                                 url = f"https://www.youtube.com/watch?v={video_id}"
+
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] Sending YouTube alert for {channel_name}: {title}")
 
                                 embed = discord.Embed(
                                     title=title,
@@ -240,6 +326,12 @@ class StreamAlerts(commands.Cog):
                                 embed.set_footer(text="YouTube", icon_url="https://img.icons8.com/?size=100&id=19318&format=png")
 
                                 await channel.send(embed=embed)
+                            else:
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: No new video")
+                        else:
+                            if DEBUG_MODE:
+                                logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: No video found")
                     except Exception as e:
                         logger.error(f"[STREAMALERTS] Error checking YouTube channel {yt_channel}: {e}")
                         continue
@@ -250,22 +342,40 @@ class StreamAlerts(commands.Cog):
 
     @tasks.loop(minutes=3)
     async def twitch_check(self):
+        if DEBUG_MODE:
+            logger.debug("[DEBUG_MODE] Starting Twitch check cycle")
+            
         try:
             await self.bot.wait_until_ready()
 
             if not self.active_alerts:
+                if DEBUG_MODE:
+                    logger.debug("[DEBUG_MODE] No active alerts, skipping Twitch check")
                 return
+
+            if DEBUG_MODE:
+                logger.debug(f"[DEBUG_MODE] Checking Twitch for {len(self.active_alerts)} guilds")
 
             for guild_id, config in list(self.active_alerts.items()):
                 if not config.get('twitch'):
+                    if DEBUG_MODE:
+                        logger.debug(f"[DEBUG_MODE] Guild {guild_id}: No Twitch channels")
                     continue
 
                 channel = self.bot.get_channel(config['channel_id'])
                 if not channel:
+                    if DEBUG_MODE:
+                        logger.debug(f"[DEBUG_MODE] Guild {guild_id}: Channel not found")
                     continue
+
+                if DEBUG_MODE:
+                    logger.debug(f"[DEBUG_MODE] Guild {guild_id}: Checking {len(config['twitch'])} Twitch channels")
 
                 for twitch_channel in config['twitch']:
                     try:
+                        if DEBUG_MODE:
+                            logger.debug(f"[DEBUG_MODE] Checking Twitch channel: {twitch_channel}")
+                            
                         stream = await self.check_twitch_channel(twitch_channel)
                         stream_key = f"{guild_id}_{twitch_channel}"
                         
@@ -274,6 +384,9 @@ class StreamAlerts(commands.Cog):
                                 self.twitch_online_status[stream_key] = True
                                 
                                 url = f"https://www.twitch.tv/{twitch_channel}"
+
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] Sending Twitch alert for {twitch_channel}: {stream['title']}")
 
                                 embed = discord.Embed(
                                     title=f"{stream['channel_name']} is live now!",
@@ -292,9 +405,17 @@ class StreamAlerts(commands.Cog):
                                     embed.set_thumbnail(url=stream.get('avatar_url'))
 
                                 await channel.send(embed=embed)
+                            else:
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Already online, no new alert")
                         else:
                             if self.twitch_online_status.get(stream_key, False):
                                 self.twitch_online_status[stream_key] = False
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Went offline")
+                            else:
+                                if DEBUG_MODE:
+                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Still offline")
                                 
                     except Exception as e:
                         logger.error(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel}: {e}")
@@ -312,6 +433,9 @@ class StreamAlerts(commands.Cog):
 
     def cog_unload(self):
         try:
+            if DEBUG_MODE:
+                logger.debug("[DEBUG_MODE] Unloading StreamAlerts cog")
+                
             self.youtube_check.cancel()
             self.twitch_check.cancel()
             self.save_alerts()
@@ -346,7 +470,7 @@ class StreamAlerts(commands.Cog):
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
     ])
-    async def alerts_youtube(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_id: str):
+    async def alerts_youtube(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_id: str):   
         if interaction.guild is None:
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
             return
@@ -384,7 +508,7 @@ class StreamAlerts(commands.Cog):
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
     ])
-    async def alerts_twitch(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_name: str):
+    async def alerts_twitch(self, interaction: discord.Interaction, action: app_commands.Choice[str], channel_name: str):            
         if interaction.guild is None:
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
             return
