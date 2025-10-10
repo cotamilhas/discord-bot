@@ -65,38 +65,43 @@ class Events(commands.Cog):
 
     async def createImage(self, member, text):
         avatar_url = str(member.avatar.url)
-        
+        avatar_size = 400
+
         avatar_img = Image.open(io.BytesIO(requests.get(avatar_url).content)).convert("RGBA")
-        avatar_size = 370
         avatar_resized = avatar_img.resize((avatar_size, avatar_size), Image.LANCZOS)
-        
+
         mask = Image.new('L', (avatar_size, avatar_size), 0)
         ImageDraw.Draw(mask).ellipse((0, 0, avatar_size, avatar_size), fill=255)
+
+        background = Image.open(BACKGROUND_IMAGE).convert("RGBA").resize((1280, 720))
         
-        avatar_final = avatar_resized.resize((185, 185), Image.LANCZOS)
-        mask_final = mask.resize((185, 185), Image.LANCZOS)
-        
-        background = Image.open(BACKGROUND_IMAGE).convert("RGBA").resize((500, 300))
-        
-        contour_size = 191 * 2
+        border_size = 12
+        contour_size = avatar_size + border_size * 2
         contour = Image.new('RGBA', (contour_size, contour_size), (255, 255, 255, 0))
         contour_draw = ImageDraw.Draw(contour)
-        contour_draw.ellipse((0, 0, contour_size, contour_size), outline=(255, 255, 255, 255), width=6 * 2)
-        
-        contour_final = contour.resize((191, 191), Image.LANCZOS)
-        contour_final.paste(avatar_final, (3, 3), mask_final)
-        
-        contourX = (500 - 191) // 2
-        contourY = (300 - 191) // 2
-        background.paste(contour_final, (contourX, contourY), contour_final)
-        
+        contour_draw.ellipse(
+            (0, 0, contour_size - 1, contour_size - 1),
+            outline=(255, 255, 255, 255),
+            width=border_size
+        )
+
+        avatar_pos = (border_size, border_size)
+        contour.paste(avatar_resized, avatar_pos, mask)
+
+        contourX = (1280 - contour_size) // 2
+        contourY = (720 - contour_size) // 2 - 60
+
+        background.paste(contour, (contourX, contourY), contour)
+
         draw = ImageDraw.Draw(background)
         font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
-        
+
         textBBox = draw.textbbox((0, 0), text, font=font)
-        textX = (500 - (textBBox[2] - textBBox[0])) // 2
-        draw.text((textX, 260), text, font=font, fill=(255, 255, 255))
-        
+        textX = (1280 - (textBBox[2] - textBBox[0])) // 2
+        textY = contourY + contour_size + 40
+
+        draw.text((textX, textY), text, font=font, fill=(255, 255, 255))
+
         with io.BytesIO() as img:
             background.save(img, 'PNG')
             img.seek(0)
@@ -111,8 +116,8 @@ class Events(commands.Cog):
             print(
                 f"{Fore.YELLOW}{member} joined, but no System Message Channel available to announce it.")
             return
-        
-        text = f'{member.display_name} joined the server!'
+
+        text = f'{member.display_name} joined the {guild.name}!'
         try:
             file = await self.createImage(member, text)
             await channel.send(file=file)  
@@ -130,8 +135,8 @@ class Events(commands.Cog):
             print(
                 f"{Fore.YELLOW}{member} left, but no System Message Channel available to announce it.")
             return
-        
-        text = f'{member.display_name} left the server!'
+
+        text = f'{member.display_name} left the {guild.name}!'
         try:
             file = await self.createImage(member, text)
             await channel.send(file=file)
@@ -140,6 +145,25 @@ class Events(commands.Cog):
             await channel.send(f"{member} left. An error occurred while creating the image.")
             return None
         await channel.send(file=file)
+        
+    # DEBUG
+    @commands.command(name="forceimage")
+    async def force_image(self, ctx, member: discord.Member = None):
+        guild = ctx.guild
+        if member is None:
+            member = ctx.author
+            
+        if ctx.author.id != member.guild.owner.id:
+            return
+            
+        text = f'{member.display_name} joined the {guild.name}!'
+        try:
+            file = await self.createImage(member, text)
+            await ctx.send(file=file)
+        except Exception as e:
+            print(Fore.RED + f"[EVENTS] Error creating image: {e}")
+            await ctx.send(f"{member} joined. An error occurred while creating the image.")
+            return None
 
 
 async def setup(bot):

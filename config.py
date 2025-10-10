@@ -1,6 +1,5 @@
 import os
 import discord
-from discord.ext import commands
 from discord import ButtonStyle
 
 DEBUG_MODE = False  # Change this to True if you want to enable debug mode, otherwise False
@@ -14,7 +13,7 @@ COMMAND_PREFIX = "!"  # Change this to your desired command prefix, at the momen
 
 # Font settings
 FONT_PATH = os.path.join(os.path.dirname(__file__), "stuff", "arial.ttf")  # Change this to the path of your font file
-FONT_SIZE = 22  # Change this to the size of your font
+FONT_SIZE = 44  # Change this to the size of your font
 
 # Background image
 BACKGROUND_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "background.png")  # Change this to the path of your background image
@@ -77,7 +76,7 @@ YTDL_DIRECT_OPTS = {
     'retries': 3,
     'http_headers': {
         'Referer': 'https://www.youtube.com/',
-    },
+    }
 }
 
 _cookie_path = os.path.join(os.path.dirname(__file__), "stuff", "cookies.txt") # Change this to the path of your cookies file

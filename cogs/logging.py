@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord import app_commands
 import json
 from colorama import Fore, Style, init
 from config import SERVER_OPTIONS, EMBED_COLOR

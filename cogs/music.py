@@ -240,13 +240,18 @@ class Music(commands.Cog):
             if not vc:
                 if DEBUG_MODE:
                     print(f"[MUSIC][DEBUG] Connecting to {voice_channel.name}")
+                    
                 vc = await voice_channel.connect()
-                print(f"[MUSIC][INFO] Connected to {voice_channel.name}")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][INFO] Connected to {voice_channel.name}")
+                    
             elif vc.channel != voice_channel:
                 if DEBUG_MODE:
                     print(f"[MUSIC][DEBUG] Moving from {vc.channel.name} to {voice_channel.name}")
+                    
                 await vc.move_to(voice_channel)
-                print(f"[MUSIC][INFO] Moved to {voice_channel.name}")
+                if DEBUG_MODE:
+                    print(f"[MUSIC][INFO] Moved to {voice_channel.name}")
 
             return vc
 

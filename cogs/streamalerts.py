@@ -9,6 +9,7 @@ import json
 import os
 import logging
 import ssl
+import io
 from config import ALERTS, ALERTS_FILE, EMBED_COLOR
 from config import YOUTUBE_CHANNEL_LIMIT, TWITCH_CHANNEL_LIMIT, DEBUG_MODE
 
@@ -207,6 +208,16 @@ class StreamAlerts(commands.Cog):
         if DEBUG_MODE:
             logger.debug(f"[DEBUG_MODE] No thumbnail found for video: {video_id}")
         return None
+    
+    async def download_image(self, url):
+        await self.create_session()
+        try:
+            async with self.session.get(url) as resp:
+                if resp.status == 200:
+                    return await resp.read()
+        except Exception as e:
+            logger.warning(f"Failed to download image: {e}")
+        return None
 
     async def check_twitch_channel(self, channel_name: str):
         if DEBUG_MODE:
@@ -382,7 +393,6 @@ class StreamAlerts(commands.Cog):
                         if stream:
                             if not self.twitch_online_status.get(stream_key, False):
                                 self.twitch_online_status[stream_key] = True
-                                
                                 url = f"https://www.twitch.tv/{twitch_channel}"
 
                                 if DEBUG_MODE:
@@ -395,16 +405,26 @@ class StreamAlerts(commands.Cog):
                                     color=discord.Color.purple(),
                                     timestamp=datetime.now(timezone.utc)
                                 )
+                                
                                 if stream['game_name'] != "":
                                     embed.add_field(name="Game", value=stream['game_name'], inline=True)
+                                    
                                 if stream['viewer_count'] != "Unknown":
                                     embed.add_field(name="Viewers", value=stream['viewer_count'], inline=True)
-                                embed.set_image(url=stream['thumbnail_url'])
+
                                 embed.set_footer(text="Twitch", icon_url="https://img.icons8.com/?size=100&id=18103&format=png")
+                                
                                 if stream.get('avatar_url'):
                                     embed.set_thumbnail(url=stream.get('avatar_url'))
 
-                                await channel.send(embed=embed)
+                                thumbnail_bytes = await self.download_image(stream['thumbnail_url'])
+                                if thumbnail_bytes:
+                                    file = discord.File(io.BytesIO(thumbnail_bytes), filename="twitch_thumb.jpg")
+                                    embed.set_image(url="attachment://twitch_thumb.jpg")
+                                    await channel.send(embed=embed, file=file)
+                                else:
+                                    embed.set_image(url=stream['thumbnail_url'])
+                                    await channel.send(embed=embed)
                             else:
                                 if DEBUG_MODE:
                                     logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Already online, no new alert")
