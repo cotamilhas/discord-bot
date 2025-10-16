@@ -52,6 +52,36 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - Customize commands and features in the bot's source code to meet your specific requirements.
 - Start the bot and invite it to your Discord server.
 
+## Multi-Bot Support
+
+This project supports running multiple Discord bots (or sub-bots) in parallel. Each sub-bot should be placed in its own folder inside the `bots` directory, with a separate `main.py` file for each bot.
+
+**How to add a sub-bot:**
+1. Create a new folder inside the `bots` directory (e.g., `bots/other_bot`).
+2. Add your sub-bot’s code, including a `main.py` entry point.
+3. Each sub-bot can have its own configuration, features, and cogs.
+
+> **Note:** Each sub-bot has its own set of cogs, which are not shared with the main bot or other sub-bots. This allows each bot to have completely independent functionality.
+
+When you start the main bot (`python main.py`), all sub-bots in the `bots` directory with a `main.py` will be launched automatically.
+
+This allows you to manage multiple bots from a single project, each with different tokens, functionalities, and cogs.
+
+**Example structure:**
+```
+discord-bot/
+├── bots/
+│   ├── bot1/
+│   │   ├── main.py
+│   │   └── cogs/
+│   └── bot2/
+│       ├── main.py
+│       └── cogs/
+├── cogs/
+├── main.py
+└── config.py
+```
+
 ## WARNING: Handling Large Numbers with Web Hosting Services
 When working with large numbers, such as user IDs or message IDs, there can be issues with precision due to the way JavaScript and certain hosting environments handle large integers. Discord bots, when hosted on web services, might encounter problems with handling these large numbers, leading to incorrect or truncated data.
 

@@ -50,6 +50,9 @@ HEADS_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "heads.png")  # C
 
 FILTERS_FOLDER = os.path.join(os.path.dirname(__file__), "stuff", "filters")  # Change this to the path of your filters folder
 
+USE_SUB_BOT = False  # Change this to True if you want to enable sub-bot support, otherwise False
+SUB_BOT_FOLDER = "bots"  # Change this to the folder where your sub-bots are located
+
 # YT_DLP Options
 YTDL_SEARCH_OPTS = {
     'format': 'bestaudio/best',
