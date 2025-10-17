@@ -51,16 +51,16 @@ class Fun(commands.Cog):
 
     @app_commands.command(name="filter", description="Apply a filter to an avatar.")
     @app_commands.describe(
-        filter_name="The filter to apply.",
+        filter="The filter to apply.",
         user="Optional user to apply the filter to (defaults to you)."
     )
-    @app_commands.choices(filter_name=[
+    @app_commands.choices(filter=[
         app_commands.Choice(name="Grayscale", value="grayscale"),
         app_commands.Choice(name="Invert", value="invert"),
         app_commands.Choice(name="Sepia", value="sepia"),
         app_commands.Choice(name="Portuguese", value="portuguese")
     ])
-    async def filter(self, interaction: discord.Interaction, filter_name: app_commands.Choice[str], user: Optional[discord.User] = None):
+    async def filter(self, interaction: discord.Interaction, filter: app_commands.Choice[str], user: Optional[discord.User] = None):
         target_user = user or interaction.user
         avatar_url = target_user.display_avatar.url
 
@@ -70,17 +70,17 @@ class Fun(commands.Cog):
             response = requests.get(avatar_url)
             avatar_image = Image.open(BytesIO(response.content)).convert("RGBA")
 
-            if filter_name.value == 'grayscale':
+            if filter.value == 'grayscale':
                 filtered_image = ImageOps.grayscale(avatar_image).convert("RGBA")
 
-            elif filter_name.value == 'invert':
+            elif filter.value == 'invert':
                 r, g, b, a = avatar_image.split()
                 rgb_image = Image.merge("RGB", (r, g, b))
                 inverted_image = ImageOps.invert(rgb_image)
                 r2, g2, b2 = inverted_image.split()
                 filtered_image = Image.merge("RGBA", (r2, g2, b2, a))
 
-            elif filter_name.value == 'sepia':
+            elif filter.value == 'sepia':
                 img = avatar_image.convert("RGB")
                 pixels = img.load()
                 for y in range(img.height):
@@ -93,7 +93,7 @@ class Fun(commands.Cog):
                         pixels[x, y] = (tr, tg, tb)
                 filtered_image = img.convert("RGBA")
 
-            elif filter_name.value == 'portuguese':
+            elif filter.value == 'portuguese':
                 filter_path = os.path.join(FILTERS_FOLDER, "portuguese.png")
                 if not os.path.exists(filter_path):
                     await interaction.followup.send("Error: Portuguese filter image not found.", ephemeral=True)
@@ -115,7 +115,7 @@ class Fun(commands.Cog):
 
             file = discord.File(fp=output_buffer, filename="filtered_avatar.png")
             embed = discord.Embed(
-                title=f"{target_user.name}'s Avatar with {filter_name.name} Filter",
+                title=f"{target_user.name}'s Avatar with {filter.name} Filter",
                 color=EMBED_COLOR
             )
             embed.set_image(url="attachment://filtered_avatar.png")

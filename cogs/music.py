@@ -394,8 +394,10 @@ class Music(commands.Cog):
             if self.is_spotify_url(query):
                 if DEBUG_MODE:
                     print("[MUSIC][DEBUG] Processing Spotify URL")
-                await ctx.send("Processing the Spotify link. It may take a few seconds to add all the songs to the queue.")
+                
+                msg = await ctx.send("Processing the Spotify link. It may take a few seconds to add all the songs to the queue.")
                 titles = await self.extract_spotify_titles(query)
+                
                 if not titles:
                     await ctx.send("[MUSIC] Could not process Spotify link.")
                     return
@@ -411,10 +413,13 @@ class Music(commands.Cog):
                         if i == 0 and not vc.is_playing():
                             await self.play_next(ctx, vc)
                     await asyncio.sleep(0.5)
+
+                await msg.add_reaction("✅")
                     
             else:
                 if DEBUG_MODE:
                     print("[MUSIC][DEBUG] Processing YouTube search/URL")
+                
                 entries = await self.yt_search(query)
                 if not entries:
                     await ctx.send(embed=Embed(description="No results found.", color=EMBED_COLOR))

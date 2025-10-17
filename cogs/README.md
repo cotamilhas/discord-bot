@@ -138,6 +138,9 @@ Adds moderation commands for banning, kicking, timing out, unbanning, and removi
 
 Enables music playback via YouTube and Spotify, with support for queues and interactive navigation.
 
+> **Note:** If you're on Windows, this cog might not work properly. I’m not sure what causes the issue yet. Until it’s fixed, I recommend using a Linux server. Also, make sure [FFMPEG](https://www.ffmpeg.org/download.html)
+ is installed.
+
 **Features**
 - Play from YouTube/Spotify
 - Queue, skip, stop, pause, resume, now playing

@@ -19,7 +19,7 @@ FONT_SIZE = 44  # Change this to the size of your font
 BACKGROUND_IMAGE = os.path.join(os.path.dirname(__file__), "stuff", "background.png")  # Change this to the path of your background image
 
 # Bot presence settings
-BOT_PRESENCE = 4  # 0 - Playing Status; 1 - Streaming Status; 2 - Listening Status; 3 - Watching Status; 4 - Normal Status.
+BOT_PRESENCE = 4  # 0 - Playing Status; 1 - Streaming Status; 2 - Listening Status; 3 - Watching Status; >=4 - Normal Status.
 GAME_NAME_PRESENCE = "Game"  # Change this to the game you want to show in the presence
 STREAM_NAME_PRESENCE = "Stream"  # Change this to the stream you want to show in the presence
 STREAM_URL_PRESENCE = "https://www.twitch.tv/cotamilhas"  # Twitch Link or YouTube Live Link
@@ -82,6 +82,7 @@ YTDL_DIRECT_OPTS = {
     }
 }
 
+# You will need this if YT_DLP is having issues with age-restricted content
 _cookie_path = os.path.join(os.path.dirname(__file__), "stuff", "cookies.txt") # Change this to the path of your cookies file
 COOKIES_FILE = _cookie_path if os.path.isfile(_cookie_path) else None # If the cookies file doesn't exist, set COOKIES_FILE to None
 # To obtain cookies, you can use a browser extension like "Get cookies.txt LOCALLY" to export cookies from your browser.
