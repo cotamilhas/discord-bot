@@ -16,12 +16,15 @@ from config import YOUTUBE_CHANNEL_LIMIT, TWITCH_CHANNEL_LIMIT, DEBUG_MODE
 if DEBUG_MODE:
     logger = logging.getLogger("streamalerts")
     logging.basicConfig(level=logging.INFO)
+else:
+    logger = logging.getLogger("streamalerts")
+    logging.basicConfig(level=logging.WARNING)
 
 class StreamAlerts(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.active_alerts = {}
-        self.last_checked = {'youtube': {}, 'twitch': {}}
+        self.last_checked = {}
         self.session = None
         self.twitch_online_status = {}
         self.retry_count = 0
@@ -34,7 +37,7 @@ class StreamAlerts(commands.Cog):
         if not os.path.exists(ALERTS_FILE):
             os.makedirs(os.path.dirname(ALERTS_FILE), exist_ok=True)
             with open(ALERTS_FILE, "w") as f:
-                json.dump({"alerts": {}, "last_checked": {"youtube": {}, "twitch": {}}}, f, indent=2)
+                json.dump({"alerts": {}, "last_checked": {}}, f, indent=2)
             if DEBUG_MODE:
                 logger.debug(f"[DEBUG_MODE] Created new alerts file: {ALERTS_FILE}")
 
@@ -80,10 +83,10 @@ class StreamAlerts(commands.Cog):
                 with open(ALERTS_FILE, 'r') as f:
                     data = json.load(f)
                     self.active_alerts = data.get('alerts', {})
-                    self.last_checked = data.get('last_checked', {'youtube': {}, 'twitch': {}})
+                    self.last_checked = data.get('last_checked', {})
                 if DEBUG_MODE:
                     logger.debug(f"[DEBUG_MODE] Loaded alerts: {len(self.active_alerts)} guilds")
-                    logger.debug(f"[DEBUG_MODE] Last checked - YouTube: {len(self.last_checked['youtube'])}, Twitch: {len(self.last_checked['twitch'])}")
+                    logger.debug(f"[DEBUG_MODE] Last checked data for {len(self.last_checked)} guilds")
         except Exception as e:
             logger.error(f"Error loading alerts: {e}")
 
@@ -300,6 +303,11 @@ class StreamAlerts(commands.Cog):
                 if DEBUG_MODE:
                     logger.debug(f"[DEBUG_MODE] Guild {guild_id}: Checking {len(config['youtube'])} YouTube channels")
 
+                if guild_id not in self.last_checked:
+                    self.last_checked[guild_id] = {'youtube': {}, 'twitch': {}}
+                elif 'youtube' not in self.last_checked[guild_id]:
+                    self.last_checked[guild_id]['youtube'] = {}
+
                 for yt_channel in config['youtube']:
                     try:
                         if DEBUG_MODE:
@@ -308,13 +316,13 @@ class StreamAlerts(commands.Cog):
                         video = await self.check_youtube_channel(yt_channel)
                         if video:
                             video_id = video['id']['videoId']
-                            last_video = self.last_checked['youtube'].get(yt_channel)
+                            last_video = self.last_checked[guild_id]['youtube'].get(yt_channel)
 
                             if DEBUG_MODE:
-                                logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: Last video: {last_video}, Current video: {video_id}")
+                                logger.debug(f"[DEBUG_MODE] Guild {guild_id} - YouTube channel {yt_channel}: Last video: {last_video}, Current video: {video_id}")
 
                             if last_video != video_id:
-                                self.last_checked['youtube'][yt_channel] = video_id
+                                self.last_checked[guild_id]['youtube'][yt_channel] = video_id
                                 self.save_alerts()
 
                                 title = video['snippet']['title']
@@ -322,7 +330,7 @@ class StreamAlerts(commands.Cog):
                                 url = f"https://www.youtube.com/watch?v={video_id}"
 
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] Sending YouTube alert for {channel_name}: {title}")
+                                    logger.debug(f"[DEBUG_MODE] Sending YouTube alert to guild {guild_id} for {channel_name}: {title}")
 
                                 embed = discord.Embed(
                                     title=title,
@@ -339,12 +347,12 @@ class StreamAlerts(commands.Cog):
                                 await channel.send(embed=embed)
                             else:
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: No new video")
+                                    logger.debug(f"[DEBUG_MODE] Guild {guild_id} - YouTube channel {yt_channel}: No new video")
                         else:
                             if DEBUG_MODE:
-                                logger.debug(f"[DEBUG_MODE] YouTube channel {yt_channel}: No video found")
+                                logger.debug(f"[DEBUG_MODE] Guild {guild_id} - YouTube channel {yt_channel}: No video found")
                     except Exception as e:
-                        logger.error(f"[STREAMALERTS] Error checking YouTube channel {yt_channel}: {e}")
+                        logger.error(f"[STREAMALERTS] Error checking YouTube channel {yt_channel} in guild {guild_id}: {e}")
                         continue
         except Exception as e:
             logger.critical(f"[STREAMALERTS] Critical error in youtube_check: {e}")
@@ -396,7 +404,7 @@ class StreamAlerts(commands.Cog):
                                 url = f"https://www.twitch.tv/{twitch_channel}"
 
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] Sending Twitch alert for {twitch_channel}: {stream['title']}")
+                                    logger.debug(f"[DEBUG_MODE] Sending Twitch alert to guild {guild_id} for {twitch_channel}: {stream['title']}")
 
                                 embed = discord.Embed(
                                     title=f"{stream['channel_name']} is live now!",
@@ -427,19 +435,20 @@ class StreamAlerts(commands.Cog):
                                     await channel.send(embed=embed)
                             else:
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Already online, no new alert")
+                                    logger.debug(f"[DEBUG_MODE] Guild {guild_id} - Twitch channel {twitch_channel}: Already online, no new alert")
                         else:
                             if self.twitch_online_status.get(stream_key, False):
                                 self.twitch_online_status[stream_key] = False
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Went offline")
+                                    logger.debug(f"[DEBUG_MODE] Guild {guild_id} - Twitch channel {twitch_channel}: Went offline")
                             else:
                                 if DEBUG_MODE:
-                                    logger.debug(f"[DEBUG_MODE] Twitch channel {twitch_channel}: Still offline")
+                                    logger.debug(f"[DEBUG_MODE] Guild {guild_id} - Twitch channel {twitch_channel}: Still offline")
                                 
                     except Exception as e:
-                        logger.error(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel}: {e}")
+                        logger.error(f"[STREAMALERTS] Error checking Twitch channel {twitch_channel} in guild {guild_id}: {e}")
                         continue
+
         except Exception as e:
             logger.critical(f"[STREAMALERTS] Critical error in twitch_check: {e}")
             await asyncio.sleep(60)
@@ -478,6 +487,8 @@ class StreamAlerts(commands.Cog):
 
         if guild_id not in self.active_alerts:
             self.active_alerts[guild_id] = {"channel_id": channel.id, "youtube": [], "twitch": []}
+            if guild_id not in self.last_checked:
+                self.last_checked[guild_id] = {'youtube': {}, 'twitch': {}}
         else:
             self.active_alerts[guild_id]["channel_id"] = channel.id
 
@@ -509,6 +520,8 @@ class StreamAlerts(commands.Cog):
                 return
             if channel_id not in config["youtube"]:
                 config["youtube"].append(channel_id)
+                if guild_id not in self.last_checked:
+                    self.last_checked[guild_id] = {'youtube': {}, 'twitch': {}}
                 self.save_alerts()
                 await interaction.response.send_message(f"YouTube alert added for **{channel_id}**", ephemeral=True)
             else:
@@ -517,6 +530,8 @@ class StreamAlerts(commands.Cog):
         elif action.value == "remove":
             if channel_id in config["youtube"]:
                 config["youtube"].remove(channel_id)
+                if guild_id in self.last_checked and channel_id in self.last_checked[guild_id]['youtube']:
+                    del self.last_checked[guild_id]['youtube'][channel_id]
                 self.save_alerts()
                 await interaction.response.send_message(f"YouTube alert removed for **{channel_id}**", ephemeral=True)
             else:
@@ -556,6 +571,9 @@ class StreamAlerts(commands.Cog):
             for channel in config["twitch"]:
                 if channel.lower() == channel_name.lower():
                     config["twitch"].remove(channel)
+                    stream_key = f"{guild_id}_{channel}"
+                    if stream_key in self.twitch_online_status:
+                        del self.twitch_online_status[stream_key]
                     self.save_alerts()
                     await interaction.response.send_message(f"Twitch alert removed for **{channel}**", ephemeral=True)
                     return
@@ -592,7 +610,7 @@ class StreamAlerts(commands.Cog):
         embed.add_field(name="YouTube", value=yt_list_str, inline=False)
         embed.add_field(name="Twitch", value=tw_list, inline=False)
 
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 async def setup(bot):
