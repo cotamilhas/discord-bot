@@ -5,7 +5,7 @@ import io
 import requests
 from colorama import Fore, init
 import sys
-from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE 
+from config import FONT_PATH, FONT_SIZE, BACKGROUND_IMAGE, DEBUG_MODE
 from config import BOT_PRESENCE, GAME_NAME_PRESENCE, STREAM_NAME_PRESENCE, STREAM_URL_PRESENCE, SONG_NAME_PRESENCE, MOVIE_NAME_PRESENCE
 init(autoreset=True)
 
@@ -144,26 +144,26 @@ class Events(commands.Cog):
             print(Fore.RED + f"[EVENTS] Error creating image: {e}")
             await channel.send(f"{member} left. An error occurred while creating the image.")
             return None
-        await channel.send(file=file)
         
     # DEBUG
     @commands.command(name="forceimage")
     async def force_image(self, ctx, member: discord.Member = None):
-        guild = ctx.guild
-        if member is None:
-            member = ctx.author
-            
-        if ctx.author.id != member.guild.owner.id:
-            return
-            
-        text = f'{member.display_name} joined the {guild.name}!'
-        try:
-            file = await self.createImage(member, text)
-            await ctx.send(file=file)
-        except Exception as e:
-            print(Fore.RED + f"[EVENTS] Error creating image: {e}")
-            await ctx.send(f"{member} joined. An error occurred while creating the image.")
-            return None
+        if DEBUG_MODE:
+            guild = ctx.guild
+            if member is None:
+                member = ctx.author
+                
+            if ctx.author.id != member.guild.owner.id:
+                return
+                
+            text = f'{member.display_name} joined the {guild.name}!'
+            try:
+                file = await self.createImage(member, text)
+                await ctx.send(file=file)
+            except Exception as e:
+                print(Fore.RED + f"[EVENTS] Error creating image: {e}")
+                await ctx.send(f"{member} joined. An error occurred while creating the image.")
+                return None
 
 
 async def setup(bot):
