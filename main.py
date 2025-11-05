@@ -5,8 +5,7 @@ import os
 import asyncio
 from datetime import datetime, timezone
 from colorama import Fore, Style, init
-from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR
-from config import INTENTS, DEBUG_MODE, USE_SUB_BOT, SUB_BOT_FOLDER
+from config import TOKEN, COMMAND_PREFIX, EMBED_COLOR, INTENTS, DEBUG_MODE
 
 init(autoreset=True)
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=INTENTS, help_command=None)
@@ -45,49 +44,6 @@ async def load_cogs():
                 print(f"Cog loaded: {Fore.GREEN}{extension}")
             except Exception as e:
                 print(f"{Fore.RED}Error loading {extension}: {e}")
-
-async def load_sub_bots():
-    if not USE_SUB_BOT:
-        return
-
-    bots_dir = SUB_BOT_FOLDER
-
-    if not os.path.exists(bots_dir):
-        print(f"{Fore.YELLOW}[SUB-BOT] No 'bots' directory found, skipping...")
-        return
-
-    for folder in os.listdir(bots_dir):
-        bot_path = os.path.join(bots_dir, folder)
-        main_py = os.path.join(bot_path, "main.py")
-
-        if os.path.isdir(bot_path) and os.path.exists(main_py):
-            try:
-                print(f"{Fore.CYAN}[SUB-BOT] Launching: {Fore.GREEN}{folder}")
-                process = await asyncio.create_subprocess_exec(
-                    "python", "main.py",
-                    cwd=bot_path,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-
-                asyncio.create_task(stream_subbot_output(process, folder))
-
-            except Exception as e:
-                print(f"{Fore.RED}[SUB-BOT] Failed to start {folder}: {e}")
-
-async def stream_subbot_output(process, name):
-    if not DEBUG_MODE:
-        return
-
-    while True:
-        line = await process.stdout.readline()
-        if not line:
-            break
-        print(f"{Fore.MAGENTA}[{name}] {Fore.RESET}{line.decode().rstrip()}")
-
-    err = await process.stderr.read()
-    if err:
-        print(f"{Fore.RED}[{name} ERROR]{Fore.RESET} {err.decode().rstrip()}")
 
 @bot.tree.command(name="help", description="Displays the help menu.")
 @app_commands.describe(command="The command you want to get help with.")
@@ -186,9 +142,8 @@ async def on_interaction(interaction: discord.Interaction):
             
 @bot.event
 async def on_ready():
-    if USE_SUB_BOT and not getattr(bot, "_sub_bots_started", False):
-        await load_sub_bots()
-        bot._sub_bots_started = True
+    await bot.tree.sync()
+    print(f"\n{Fore.GREEN}Bot is Online!")
 
 if __name__ == "__main__":
     async def main():

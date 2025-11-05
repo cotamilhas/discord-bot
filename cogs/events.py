@@ -19,7 +19,6 @@ class Events(commands.Cog):
             self.bot.appinfo = await self.bot.application_info()
             self.bot.owner_id = self.bot.appinfo.owner.id
         
-        print(f"\n{Fore.GREEN}Bot is Online!")
         print(f"Logged in as {Fore.GREEN}{self.bot.user.name} {Fore.YELLOW}({self.bot.user.id})\n")
         print(f"{Fore.CYAN}Owner: {Fore.GREEN}{self.bot.appinfo.owner} {Fore.YELLOW}({self.bot.appinfo.owner.id})")
         print(f"{Fore.CYAN}Python Version: {Fore.GREEN}{sys.version}")
@@ -60,8 +59,6 @@ class Events(commands.Cog):
             print(f"Bot presence set to: {Fore.GREEN}{BOT_PRESENCE}{Fore.WHITE}: {Fore.CYAN}{description}\n")
         else:
             print(f"[EVENTS]{Fore.RED} Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
-
-        await self.bot.tree.sync()
 
     async def createImage(self, member, text):
         avatar_url = str(member.avatar.url)
