@@ -55,7 +55,7 @@ SUB_BOT_FOLDER = "bots"  # Change this to the folder where your sub-bots are loc
 
 # YT_DLP Options
 YTDL_SEARCH_OPTS = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio[ext=webm][acodec=opus]/bestaudio/best',
     'quiet': True,
     'no_warnings': True,
     'default_search': 'ytsearch',
@@ -71,7 +71,7 @@ YTDL_SEARCH_OPTS = {
 }
 
 YTDL_DIRECT_OPTS = {
-    'format': 'bestaudio/best',
+    'format': 'bestaudio[ext=webm][acodec=opus]/bestaudio/best',
     'quiet': True,
     'no_warnings': True,
     'source_address': '0.0.0.0',
