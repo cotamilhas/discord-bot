@@ -112,6 +112,5 @@ Contributions are welcome! Feel free to fork this repository, create a new branc
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-``` ````
 
 Tell me if you'd like any other specific edits (add badges, change Python version, add examples, or push the change to the repo/PR).
