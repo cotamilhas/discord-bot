@@ -1,9 +1,8 @@
-
 # Discord Bot
 
 This is a Discord bot project developed to interact with Discord servers. The bot includes multiple features to enhance server functionality and user engagement. 
 
-**All of this cogs are optional!** You can remove them if you want, they purpose is just to give an example what you can do.
+**All of these cogs are optional!** You can remove them if you want — their purpose is just to give examples of what you can do.
 
 ## Features
 
@@ -12,7 +11,7 @@ This is a Discord bot project developed to interact with Discord servers. The bo
 - [x] **Leveling System**: Allow users to gain experience and level up as they send messages.
 - [x] **Logging System**: Track important server events with a comprehensive logging system.
 - [x] **Fun Interactions**: Provide entertainment for server members with interactive commands.
-- [x] **Music**: Play music in voice channels with commands to queue, skip, pause.
+- [x] **Music**: Play music in voice channels with commands to queue, skip, and pause.
 - [x] **Alerts System**: Get notified about Twitch/YouTube streams.
 - [x] **Ticket System**: Create private support channels for members with one click.
 
@@ -36,11 +35,21 @@ This is a Discord bot project developed to interact with Discord servers. The bo
    ```
 
 3. Set up your bot token:
-   - Go to `config.py` file in the root directory.
-   - Add your bot token as follows:
+   - The project uses `config.py` in the repository root. You can add your bot token directly there:
+     ```py
+     TOKEN = "your-bot-token"
      ```
-     TOKEN="your-bot-token"
+   - For better security, it's strongly recommended to use an environment variable or a `.env` file. Example using an environment variable in `config.py`:
+     ```py
+     import os
+     TOKEN = os.getenv("DISCORD_BOT_TOKEN", "your-fallback-token-if-any")
      ```
+     Then run the bot with the environment variable set:
+     ```bash
+     export DISCORD_BOT_TOKEN="your-bot-token"
+     python main.py
+     ```
+   - If you prefer `.env`, use python-dotenv to load it in `config.py`.
 
 4. Run the bot:
    ```bash
@@ -83,11 +92,18 @@ discord-bot/
 ```
 
 ## WARNING: Handling Large Numbers with Web Hosting Services
-When working with large numbers, such as user IDs or message IDs, there can be issues with precision due to the way JavaScript and certain hosting environments handle large integers. Discord bots, when hosted on web services, might encounter problems with handling these large numbers, leading to incorrect or truncated data.
 
-This problem occurs because many web hosting services and APIs may not properly support large integers, causing them to lose precision when they exceed the safe integer limit in JavaScript (2^53 - 1). This could result in values being displayed incorrectly, such as missing digits or incorrect formatting.
+When working with large numbers, such as Discord user IDs or message IDs, there can be precision issues due to how some environments (notably JavaScript and certain hosting services) handle large integers. In JavaScript, numbers are represented as IEEE-754 doubles and integers above the safe integer limit (2^53 - 1) can lose precision.
 
-To avoid such issues, it's important to be aware of these limitations and implement proper handling for large numbers in your bot, especially when interacting with Discord's API or other services that require accurate, large numeric values.
+Discord IDs are large integers and should often be treated as strings when you need to serialize, store, or transmit them to services that might use JavaScript or other languages with limited integer precision.
+
+Recommendations:
+- Store IDs as strings in JSON, databases, or configuration files to avoid precision loss.
+- When interfacing with JavaScript services or hosting platforms, pass IDs as strings and only convert to integers where the language/runtime safely supports it.
+- In Python (where large integers are handled safely), you can convert ID strings to int when needed, but be cautious when sending those values to external services that may not preserve precision.
+- If you parse or manipulate IDs in client-side code (browser or Node), keep them as strings and use libraries that support big integers if numerical operations are required.
+
+Being aware of these limitations helps avoid subtle bugs like incorrect user or message references, failed lookups, or mismatched logs when using cross-language integrations.
 
 ## Contributing
 
@@ -96,3 +112,6 @@ Contributions are welcome! Feel free to fork this repository, create a new branc
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+``` ````
+
+Tell me if you'd like any other specific edits (add badges, change Python version, add examples, or push the change to the repo/PR).
