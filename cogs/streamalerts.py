@@ -251,7 +251,10 @@ class StreamAlerts(commands.Cog):
             
             uptime, title, game, viewers, avatar = results
 
-            if f"{channel_name} is offline" in uptime.lower() or "offline" in uptime.lower():
+            u = (uptime or "").lower()
+            v = (viewers or "").lower()
+
+            if "offline" in u or "offline" in v:
                 if DEBUG_MODE:
                     logger.debug(f"[DEBUG_MODE] Twitch channel {channel_name} is offline")
                 return None
