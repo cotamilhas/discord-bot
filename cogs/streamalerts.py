@@ -478,6 +478,7 @@ class StreamAlerts(commands.Cog):
     alerts = app_commands.Group(name="alerts", description="Manage stream alerts")
 
     @alerts.command(name="channel", description="Set the channel for stream alerts")
+    @app_commands.checks.has_permissions(administrator=True)
     async def alerts_channel(self, interaction: discord.Interaction, channel: discord.TextChannel = None):
         if interaction.guild is None:
             await interaction.response.send_message("This command can only be used in a server.", ephemeral=True)
@@ -500,6 +501,7 @@ class StreamAlerts(commands.Cog):
 
     @alerts.command(name="youtube", description="Add or remove a YouTube channel")
     @app_commands.describe(action="Choose add or remove", channel_id="YouTube channel ID")
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.choices(action=[
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
@@ -542,6 +544,7 @@ class StreamAlerts(commands.Cog):
 
     @alerts.command(name="twitch", description="Add or remove a Twitch channel")
     @app_commands.describe(action="Choose add or remove", channel_name="Twitch channel name")
+    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.choices(action=[
         app_commands.Choice(name="add", value="add"),
         app_commands.Choice(name="remove", value="remove")
