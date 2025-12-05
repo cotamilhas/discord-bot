@@ -163,6 +163,7 @@ class StreamAlerts(commands.Cog):
 
             root = ET.fromstring(xml_data)
             entry = root.find("{http://www.w3.org/2005/Atom}entry")
+
             if entry is None:
                 if DEBUG_MODE:
                     logger.debug(f"[DEBUG_MODE] No entries found for YouTube channel: {channel_id}")
@@ -275,7 +276,7 @@ class StreamAlerts(commands.Cog):
             logger.error(f"Twitch decapi error for {channel_name}: {e}")
             return None
 
-    @tasks.loop(minutes=5)
+    @tasks.loop(minutes=10)
     async def youtube_check(self):
         if DEBUG_MODE:
             logger.debug("[DEBUG_MODE] Starting YouTube check cycle")
