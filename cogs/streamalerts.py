@@ -1,3 +1,4 @@
+from enum import member
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
@@ -618,6 +619,16 @@ class StreamAlerts(commands.Cog):
         embed.add_field(name="Twitch", value=tw_list, inline=False)
 
         await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+    @commands.command(name='forcealert', help='Force a check for stream alerts')
+    @commands.guild_only()
+    @commands.has_permissions(administrator=True)
+    async def force_alert(self, ctx):
+        if DEBUG_MODE:
+            await ctx.send("Forcing stream alerts check...")
+            await self.youtube_check()
+            await self.twitch_check()
+            await ctx.send("Stream alerts check complete.")
 
 
 async def setup(bot):

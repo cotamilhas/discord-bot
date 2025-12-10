@@ -28,7 +28,7 @@ class Events(commands.Cog):
             print(f"\n{Fore.CYAN}Guilds connected to:")
             for guild in self.bot.guilds:
                 print(f"{Fore.GREEN}{guild.name} {Fore.YELLOW}({guild.id})")
-                print(f"Owner: {Fore.GREEN}{guild.owner} {Fore.YELLOW}({guild.owner.id})")
+                print(f"Server Owner: {Fore.GREEN}{guild.owner} {Fore.YELLOW}({guild.owner.id})")
                 print(f"Members: {Fore.GREEN}{guild.member_count}\n")
                 
         else:
@@ -60,7 +60,7 @@ class Events(commands.Cog):
         else:
             print(f"[EVENTS]{Fore.RED} Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
 
-    async def createImage(self, member, text):
+    async def create_image(self, member, text):
         avatar_url = str(member.avatar.url)
         avatar_size = 400
 
@@ -116,7 +116,7 @@ class Events(commands.Cog):
 
         text = f'{member.display_name} joined the {guild.name}!'
         try:
-            file = await self.createImage(member, text)
+            file = await self.create_image(member, text)
             await channel.send(file=file)  
         except Exception as e:
             print(Fore.RED + f"[EVENTS] Error creating image: {e}")
@@ -135,7 +135,7 @@ class Events(commands.Cog):
 
         text = f'{member.display_name} left the {guild.name}!'
         try:
-            file = await self.createImage(member, text)
+            file = await self.create_image(member, text)
             await channel.send(file=file)
         except Exception as e:
             print(Fore.RED + f"[EVENTS] Error creating image: {e}")
@@ -155,7 +155,7 @@ class Events(commands.Cog):
                 
             text = f'{member.display_name} joined the {guild.name}!'
             try:
-                file = await self.createImage(member, text)
+                file = await self.create_image(member, text)
                 await ctx.send(file=file)
             except Exception as e:
                 print(Fore.RED + f"[EVENTS] Error creating image: {e}")
