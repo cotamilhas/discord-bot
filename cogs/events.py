@@ -61,7 +61,7 @@ class Events(commands.Cog):
             print(f"[EVENTS]{Fore.RED} Invalid BOT_PRESENCE value: {BOT_PRESENCE}")
 
     async def create_image(self, member, text):
-        avatar_url = str(member.avatar.url)
+        avatar_url = member.display_avatar.replace(format="png", size=512).url
         avatar_size = 400
 
         avatar_img = Image.open(io.BytesIO(requests.get(avatar_url).content)).convert("RGBA")
