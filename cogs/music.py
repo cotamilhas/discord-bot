@@ -12,6 +12,7 @@ from typing import List, Dict, Optional, Tuple
 from config import EMBED_COLOR, YTDL_SEARCH_OPTS, YTDL_DIRECT_OPTS
 from config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, USE_SPOTIFY_API
 from config import NEXT_COLOR, BACK_COLOR, COOKIES_FILE, DEBUG_MODE
+from urllib.parse import urlparse
 
 sp: Optional[spotipy.Spotify] = None
 if USE_SPOTIFY_API:
@@ -89,7 +90,11 @@ class Music(commands.Cog):
         self.playing_now: Dict[int, Optional[Tuple[str, str]]] = {}
 
     def is_spotify_url(self, url: str) -> bool:
-        return USE_SPOTIFY_API and "open.spotify.com" in url
+        if not USE_SPOTIFY_API:
+            return False
+        parsed = urlparse(url)
+        host = parsed.hostname
+        return host == "open.spotify.com"
 
     async def extract_spotify_titles(self, url: str) -> List[str]:
         if not sp:
