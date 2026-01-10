@@ -68,22 +68,26 @@ class Events(commands.Cog):
         avatar_resized = avatar_img.resize((avatar_size, avatar_size), Image.LANCZOS)
 
         mask = Image.new('L', (avatar_size, avatar_size), 0)
-        ImageDraw.Draw(mask).ellipse((0, 0, avatar_size, avatar_size), fill=255)
+draw_mask = ImageDraw.Draw(mask)
+draw_mask.ellipse((0, 0, avatar_size, avatar_size), fill=255)
 
-        background = Image.open(BACKGROUND_IMAGE).convert("RGBA").resize((1280, 720))
-        
-        border_size = 12
-        contour_size = avatar_size + border_size * 2
-        contour = Image.new('RGBA', (contour_size, contour_size), (255, 255, 255, 0))
-        contour_draw = ImageDraw.Draw(contour)
-        contour_draw.ellipse(
-            (0, 0, contour_size - 1, contour_size - 1),
-            outline=(255, 255, 255, 255),
-            width=border_size
-        )
+avatar_circle = Image.new("RGBA", (avatar_size, avatar_size))
+avatar_circle.paste(avatar_resized, (0, 0), mask)
 
-        avatar_pos = (border_size, border_size)
-        contour.paste(avatar_resized, avatar_pos, mask)
+background = Image.open(BACKGROUND_IMAGE).convert("RGBA").resize((1280, 720))
+
+border_size = 12
+contour_size = avatar_size + border_size * 2
+contour = Image.new('RGBA', (contour_size, contour_size), (255, 255, 255, 0))
+contour_draw = ImageDraw.Draw(contour)
+contour_draw.ellipse(
+    (0, 0, contour_size - 1, contour_size - 1),
+    outline=(255, 255, 255, 255),
+    width=border_size
+)
+
+avatar_pos = (border_size, border_size)
+contour.paste(avatar_circle, avatar_pos, avatar_circle)
 
         contourX = (1280 - contour_size) // 2
         contourY = (720 - contour_size) // 2 - 60
