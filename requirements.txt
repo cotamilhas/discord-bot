@@ -7,3 +7,4 @@ pynacl==1.6.2
 spotipy==2.25.2
 aiohttp>=3.13.3
 audioop-lts; python_version>='3.13'
+davey>=0.1.4
