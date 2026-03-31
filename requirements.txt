@@ -1,6 +1,6 @@
 discord.py==2.4.0
 Pillow==12.1.1
-requests==2.32.4
+requests==2.33.0
 colorama==0.4.6
 yt-dlp==2026.2.21
 pynacl==1.6.2
